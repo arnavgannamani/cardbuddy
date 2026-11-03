@@ -8,6 +8,6 @@
   "license": "MIT",
   "scripts": {
     "start": "node server.mjs",
-    "test": "node test/choose.test.mjs"
+    "test": "node test/choose.test.mjs && node test/fallback.test.mjs"
   }
 }

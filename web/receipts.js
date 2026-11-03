@@ -8,7 +8,8 @@
       $('earned').textContent = money(d.totals.earned); $('def').textContent = money(d.totals.defaultEarned); $('extra').textContent = '+' + money(d.totals.extra);
       $('rows').innerHTML = d.receipts.map(function (r) {
         var when = new Date(r.at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
-        var rail = r.betterRail ? '<br><small class="muted">Paying with ' + esc(r.betterRail.rail === 'paypal' ? 'PayPal' : 'Venmo') + ' on the ' + esc(r.betterRail.card) + ' would earn ' + r.betterRail.percentBack + '%</small>' : '';
+        var fell = r.declined && r.declined.length ? '<br><small style="color:var(--warn)">' + esc(r.declined.join(', ')) + (r.status === 'paid' ? ' declined; paid with this card instead' : ' declined') + '</small>' : '';
+        var rail = fell + (r.betterRail ? '<br><small class="muted">Paying with ' + esc(r.betterRail.rail === 'paypal' ? 'PayPal' : 'Venmo') + ' on the ' + esc(r.betterRail.card) + ' would earn ' + r.betterRail.percentBack + '%</small>' : '');
         return '<tr><td>' + esc(when) + '</td><td><b>' + esc(r.description || r.merchant) + '</b><br><small class="muted">' + esc(r.merchant) + ' · ' + esc(r.category) + (r.status !== 'paid' ? ' · ' + esc(r.status) : '') + '</small></td>' +
           '<td>' + esc(r.card) + '<br><small class="muted">' + r.percentBack + '%, ' + esc(r.why) + '</small>' + rail + '</td>' +
           '<td class="r">' + money(r.amount) + '</td><td class="r"><b>' + money(r.earned) + '</b></td><td class="r muted">' + money(r.defaultEarned) + '<br><small>' + esc(r.defaultCard) + '</small></td></tr>';

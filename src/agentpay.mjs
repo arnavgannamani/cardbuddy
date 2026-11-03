@@ -56,11 +56,28 @@ export function recommend(p) {
   return { ...c, earns: money(purchase.amount * c.best.percentBack / 100), defaultEarns: money(purchase.amount * c.defaultCard.percentBack / 100) };
 }
 
-function receiptFrom(purchase, c, extra) {
+// Tries the wallet's cards best first: if one is declined (or PayPal refuses it), the next-best card pays, and the
+// receipt says which card was declined. payFn is the PayPal call, swappable for tests.
+export async function chargeInOrder(purchase, c, wallet, payFn = paypal.payWithVaultedCard) {
+  const id = randomUUID(), seen = new Set(), attempts = [];
+  const order = c.options.filter(o => o.rail === 'card' && !seen.has(o.cardId) && seen.add(o.cardId));
+  for (const o of order) {
+    const vaultId = wallet.find(w => w.cardId === o.cardId).vaultId;
+    let r;
+    try { r = await payFn({ vaultId, amount: purchase.amount, description: purchase.description || c.store, invoiceId: id }); }
+    catch (e) { if (!(e instanceof Bad)) throw e; r = { status: 'REFUSED', error: e.message }; }
+    const ok = r.status === 'COMPLETED' && (!r.captureStatus || r.captureStatus === 'COMPLETED');
+    attempts.push({ card: o.card, result: ok ? 'paid' : r.captureStatus || r.status });
+    if (ok) return receiptFrom(purchase, c, o, { id, status: 'paid', paypal: r, attempts, declined: attempts.slice(0, -1).map(a => a.card) });
+  }
+  return receiptFrom(purchase, c, order[0], { id, status: 'failed', attempts, declined: attempts.map(a => a.card) });
+}
+
+function receiptFrom(purchase, c, used, extra) {
   return {
     id: randomUUID(), at: new Date().toISOString(), merchant: c.store, site: c.site, category: c.category, description: purchase.description,
-    amount: purchase.amount, card: c.best.card, cardId: c.best.cardId, percentBack: c.best.percentBack, why: c.best.why,
-    earned: money(purchase.amount * c.best.percentBack / 100),
+    amount: purchase.amount, card: used.card, cardId: used.cardId, percentBack: used.percentBack, why: used.why,
+    earned: money(purchase.amount * used.percentBack / 100),
     defaultCard: c.defaultCard.card, defaultEarned: money(purchase.amount * c.defaultCard.percentBack / 100),
     betterRail: c.betterRail ? { rail: c.betterRail.rail, card: c.betterRail.card, percentBack: c.betterRail.percentBack } : null,
     ...extra
@@ -68,10 +85,8 @@ function receiptFrom(purchase, c, extra) {
 }
 
 async function charge(purchase, c) {
-  const receipts = load('receipts'), id = randomUUID();
-  const r = await paypal.payWithVaultedCard({ vaultId: c.best.vaultId, amount: purchase.amount, description: purchase.description || c.store, invoiceId: id });
-  const ok = r.status === 'COMPLETED' && (!r.captureStatus || r.captureStatus === 'COMPLETED');
-  const receipt = { ...receiptFrom(purchase, c, { status: ok ? 'paid' : 'failed', paypal: r }), id };
+  const receipt = await chargeInOrder(purchase, c, load('wallet'));
+  const receipts = load('receipts');
   receipts.push(receipt);
   save('receipts', receipts);
   return receipt;
