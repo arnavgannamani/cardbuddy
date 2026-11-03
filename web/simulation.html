@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; connect-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Simulation · AgentPay</title>
+  <link rel="stylesheet" href="app.css">
+  <style>
+    .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .agent h2 { margin: 0 0 2px; font-size: 18px; }
+    .agent.win { border-color: var(--blue); }
+    .bars { display: grid; gap: 14px; }
+    .bar-row .lab { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 4px; }
+    .bar { height: 12px; border-radius: 6px; margin: 3px 0; min-width: 2px; }
+    .bar.without { background: #B9C3D6; }
+    .bar.with { background: var(--blue); }
+    .key { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin: 0 6px 0 14px; vertical-align: middle; }
+    .ok { color: var(--ok); font-weight: 600; } .bad { color: #BD0A0A; font-weight: 600; }
+    @media (max-width: 600px) { .two { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <header><div class="in"><b>AgentPay</b><nav><a href="/">Wallet</a><a href="/approvals">Approvals</a><a href="/receipts">Receipts</a><a href="simulation.html" aria-current="page">Simulation</a></nav></div></header>
+  <main>
+    <h1>A year of agent purchases</h1>
+    <p class="sub" id="sub">Loading the simulation…</p>
+
+    <div class="two" id="agents"></div>
+
+    <div class="panel">
+      <h2 style="margin:0 0 4px;font-size:18px">Rewards by category</h2>
+      <p class="note"><span class="key" style="background:#B9C3D6;margin-left:0"></span>Default card<span class="key" style="background:var(--blue)"></span>AgentPay's pick</p>
+      <div class="bars" id="bars"></div>
+    </div>
+
+    <div class="panel">
+      <h2 style="margin:0 0 4px;font-size:18px">The agent's three mistakes</h2>
+      <p class="note" id="policy"></p>
+      <table><thead><tr><th>Mistake</th><th class="r">Amount</th><th>Without AgentPay</th><th>With AgentPay</th></tr></thead><tbody id="mistakes"></tbody></table>
+      <p class="warn" id="dupnote" style="margin-top:14px"></p>
+    </div>
+
+    <p class="note" id="foot"></p>
+  </main>
+  <script src="simulation.js"></script>
+</body>
+</html>

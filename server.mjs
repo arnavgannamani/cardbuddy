@@ -11,8 +11,8 @@ import { createSetupToken } from './src/paypal.mjs';
 
 const WEB = path.join(path.dirname(fileURLToPath(import.meta.url)), 'web');
 const PORT = Number(process.env.PORT || 4242);
-const PAGES = { '/': 'index.html', '/approvals': 'approvals.html', '/receipts': 'receipts.html' };
-const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml' };
+const PAGES = { '/': 'index.html', '/approvals': 'approvals.html', '/receipts': 'receipts.html', '/simulation': 'simulation.html' };
+const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.json': 'application/json; charset=utf-8' }; // the charset keeps send() from re-encoding a file as JSON
 
 const ROUTES = {
   'GET /api/config': () => ({ clientId: process.env.PAYPAL_CLIENT_ID || null, categories: CATEGORIES }),
@@ -53,7 +53,7 @@ const server = http.createServer(async (req, res) => {
       return send(500, { error: 'AgentPay hit an internal error.' });
     }
   }
-  const file = PAGES[url.pathname] || (/^\/[\w.-]+\.(js|css|svg)$/.test(url.pathname) ? url.pathname.slice(1) : null);
+  const file = PAGES[url.pathname] || (/^\/[\w.-]+\.(js|css|svg|json)$/.test(url.pathname) ? url.pathname.slice(1) : null);
   if (req.method === 'GET' && file) {
     try { return send(200, fs.readFileSync(path.join(WEB, file)), TYPES[path.extname(file)]); } catch { /* fall through */ }
   }
