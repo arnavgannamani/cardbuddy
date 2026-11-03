@@ -23,6 +23,7 @@
           '<span class="acts"><button class="ghost" data-decline="' + esc(p.id) + '">Decline</button><button data-approve="' + esc(p.id) + '">Approve and pay</button></span></div></div>';
       }).join('') : '<div class="empty-state"><b>Nothing waiting</b><p>When your agent tries a purchase over your limits, or in a category you want to see first, it stops here instead of being charged.</p></div>';
       if (window.agentpayRefreshCount) window.agentpayRefreshCount();
+      if (window.agentpayReady) window.agentpayReady();
     }).catch(function (e) { $('listMsg').textContent = e.message; });
   }
 

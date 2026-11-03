@@ -38,6 +38,7 @@
       if (!w.length) {
         $('wallet').innerHTML = '<div class="pb"><p class="note">No cards yet. Add the cards you already carry; your agent can only pay with cards on this list.</p></div>';
         $('routes').innerHTML = '<tr><td colspan="4" class="empty">Add a card to see where it wins.</td></tr>';
+        if (window.agentpayReady) window.agentpayReady();
         return;
       }
       api('/api/config').then(function (cfg) { return routes(cfg.categories || []); }).then(function (list) {
@@ -51,7 +52,7 @@
             (c.isDefault ? '<span class="pill">Default</span>' : '<button class="link" data-default="' + esc(c.vaultId) + '">Make default</button>') +
             '<button class="link" data-remove="' + esc(c.vaultId) + '" data-name="' + esc(c.card) + '">Remove</button></span></div>';
         }).join('');
-        showRoutes(list);
+        showRoutes(list); if (window.agentpayReady) window.agentpayReady();
       });
     }).catch(function (e) { say(e.message, true); });
   }

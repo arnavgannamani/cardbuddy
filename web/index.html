@@ -8,7 +8,11 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-xiaD0XEAtT7Da8WrcQjkQbhOx0ZR6pjMSRZNsqZuFdA=' https://www.paypal.com https://*.paypal.com https://*.paypalobjects.com; connect-src 'self' https://*.paypal.com; frame-src https://*.paypal.com; img-src 'self' data: https://*.paypal.com https://*.paypalobjects.com; style-src 'self' 'unsafe-inline'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
   <title>Wallet · AgentPay</title>
   <link rel="icon" href="/mark.svg">
+  <link rel="preload" href="/fonts/inter-tight-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/inter-tight-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/sora-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/app.css">
+  <script src="/shell.js"></script>
   <style>
     .cardrow { display: grid; grid-template-columns: 46px minmax(0, 1fr) auto; gap: 16px; align-items: center; padding: 18px 24px; border-bottom: 1px solid var(--rule); }
     .cardrow:last-child { border-bottom: 0; }
@@ -85,7 +89,6 @@
     <span><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M5.5 8.2 7.2 10l3.3-3.6"/></svg>Rates from each card's published terms, ranked by the PointMaxx engine.</span>
     <span>Sandbox: no real money moves.</span>
   </footer>
-  <script src="/shell.js"></script>
   <script src="/connect.js"></script>
 </body>
 </html>

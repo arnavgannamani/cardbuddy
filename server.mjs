@@ -42,7 +42,7 @@ function readBody(req) {
 
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost'), key = req.method + ' ' + url.pathname;
-  const send = (code, body, type = 'application/json') => { res.writeHead(code, { 'Content-Type': type, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' }); res.end(type === 'application/json' ? JSON.stringify(body) : body); };
+  const send = (code, body, type = 'application/json', cache = 'no-store') => { res.writeHead(code, { 'Content-Type': type, 'Cache-Control': cache, 'X-Content-Type-Options': 'nosniff' }); res.end(type === 'application/json' ? JSON.stringify(body) : body); };
   if (ROUTES[key]) {
     // Only this page may call the API: no other site can drive payments from a visitor's browser.
     if (req.method === 'POST' && req.headers.origin && req.headers.origin !== 'http://localhost:' + PORT) return send(403, { error: 'Wrong origin.' });
@@ -55,7 +55,10 @@ const server = http.createServer(async (req, res) => {
   }
   const file = PAGES[url.pathname] || (/^\/(fonts\/)?[\w.-]+\.(js|css|svg|json|woff2)$/.test(url.pathname) ? url.pathname.slice(1) : null);
   if (req.method === 'GET' && file) {
-    try { return send(200, fs.readFileSync(path.join(WEB, file)), TYPES[path.extname(file)]); } catch { /* fall through */ }
+    // Fonts and the mark are cached so moving between pages doesn't reload them and reflow the text; pages, CSS and
+    // scripts are re-checked every time so an edit shows on refresh.
+    const cache = /\.(woff2|svg)$/.test(file) ? 'public, max-age=604800' : 'no-cache';
+    try { return send(200, fs.readFileSync(path.join(WEB, file)), TYPES[path.extname(file)], cache); } catch { /* fall through */ }
   }
   send(404, 'Not found', 'text/plain');
 });

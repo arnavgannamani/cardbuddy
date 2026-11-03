@@ -61,7 +61,7 @@
       `if ${e.gapPctOfSpend}% of spend is left on the table, U.S. agent shopping in 2030 ($190B to $385B, Morgan Stanley) misses $${(e.low / 1e9).toFixed(1)}B to $${(e.high / 1e9).toFixed(1)}B in rewards a year. An illustration, not a forecast.`);
   }
 
-  fetch('/simulation.json').then(res => { if (!res.ok) throw new Error(res.status); return res.json(); }).then(render).catch(() => {
+  fetch('/simulation.json').then(res => { if (!res.ok) throw new Error(res.status); return res.json(); }).then(render).finally(() => { if (window.agentpayReady) window.agentpayReady(); }).catch(() => {
     id('sub').textContent = 'Couldn\'t load simulation.json. Run node sim/simulate.mjs, then open this page from the AgentPay server.';
     id('catRows').replaceChildren(el('tr', {}, el('td', { colSpan: 6, className: 'empty', textContent: 'No simulation results yet.' })));
   });

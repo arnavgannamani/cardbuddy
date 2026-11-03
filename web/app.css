@@ -15,7 +15,7 @@
   --col: 1120px;
 }
 * { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; }
+html { -webkit-text-size-adjust: 100%; scrollbar-gutter: stable; } /* the same width whether or not a page scrolls, so the menu never shifts sideways */
 body { margin: 0; background: var(--ground); color: var(--text); font: 15px/1.5 'Inter Tight', system-ui, -apple-system, 'Segoe UI', sans-serif; -webkit-font-smoothing: antialiased; }
 a { color: inherit; }
 :focus-visible { outline: 2px solid var(--data); outline-offset: 2px; border-radius: 3px; }
@@ -211,3 +211,13 @@ td .pill { margin-left: 6px; }
 .face.sm::before { left: 3px; top: 4px; width: 5px; height: 4px; }
 .face.sm::after { content: none; }
 @media (max-width: 640px) { .panel.bare .kpi, .panel.bare .kpi + .kpi { padding: 14px 12px 14px 0; } .panel.bare .kpi.lead ~ .kpi:nth-child(odd) { padding-left: 12px; } }
+
+/* Moving between pages: the top bar stays put and only the page below it cross-fades. */
+@view-transition { navigation: auto; }
+.top { view-transition-name: topbar; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: 160ms; animation-timing-function: ease-out; }
+::view-transition-group(topbar) { animation: none; }
+@media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }
+.wait main, .wait .foot { opacity: 0; }
+main, .foot { transition: opacity 140ms ease-out; }
+@media (prefers-reduced-motion: reduce) { main, .foot { transition: none; } }

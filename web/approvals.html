@@ -6,7 +6,11 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; connect-src 'self'; img-src 'self'; style-src 'self'; font-src 'self'; base-uri 'none'; form-action 'none'">
   <title>Approvals · AgentPay</title>
   <link rel="icon" href="/mark.svg">
+  <link rel="preload" href="/fonts/inter-tight-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/inter-tight-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/sora-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/app.css">
+  <script src="/shell.js"></script>
 </head>
 <body>
   <header class="top"><div class="in">
@@ -58,7 +62,6 @@
     <span><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M5.5 8.2 7.2 10l3.3-3.6"/></svg>Rules are checked on AgentPay's server, before any card is charged.</span>
     <span>Sandbox: no real money moves.</span>
   </footer>
-  <script src="/shell.js"></script>
   <script src="/approvals.js"></script>
 </body>
 </html>
