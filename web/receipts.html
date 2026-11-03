@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; connect-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'">
+  <title>Receipts · AgentPay</title>
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+  <header><div class="in"><b>AgentPay</b><nav><a href="/">Wallet</a><a href="/approvals">Approvals</a><a href="/receipts" aria-current="page">Receipts</a></nav></div></header>
+  <main>
+    <h1>What your agent earned you</h1>
+    <p class="sub">Every purchase your agent made, the card AgentPay picked, and what your default card would have earned.</p>
+    <div class="stats">
+      <div class="panel"><div class="muted">Rewards earned</div><div class="big" id="earned">$0.00</div></div>
+      <div class="panel"><div class="muted">With your default card</div><div class="big" id="def">$0.00</div></div>
+      <div class="panel"><div class="muted">Extra from the right card</div><div class="big" id="extra" style="color:var(--ok)">$0.00</div></div>
+    </div>
+    <div class="panel" style="overflow-x:auto">
+      <table><thead><tr><th>When</th><th>Purchase</th><th>Card</th><th class="r">Amount</th><th class="r">Earned</th><th class="r">Default</th></tr></thead><tbody id="rows"></tbody></table>
+    </div>
+    <p class="note">Rewards are estimates from each card's published terms (points at PointMaxx's cents-per-point values), before spending caps run out. PayPal sandbox: no real money moves.</p>
+  </main>
+  <script src="/receipts.js"></script>
+</body>
+</html>

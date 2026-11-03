@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Card numbers go from PayPal's card fields (their iframes) straight to PayPal. This page and the AgentPay server
+       only ever see the vault token PayPal returns. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-xiaD0XEAtT7Da8WrcQjkQbhOx0ZR6pjMSRZNsqZuFdA=' https://www.paypal.com https://*.paypal.com https://*.paypalobjects.com; connect-src 'self' https://*.paypal.com; frame-src https://*.paypal.com; img-src 'self' data: https://*.paypal.com https://*.paypalobjects.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Your wallet · AgentPay</title>
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+  <header><div class="in"><b>AgentPay</b><nav><a href="/" aria-current="page">Wallet</a><a href="/approvals">Approvals</a><a href="/receipts">Receipts</a></nav></div></header>
+  <main>
+    <h1>Your wallet</h1>
+    <p class="sub">Add the cards your agent can pay with. They're saved in PayPal's vault; AgentPay never sees the card number.</p>
+
+    <div class="panel">
+      <h2 style="margin:0 0 4px;font-size:18px">Cards</h2>
+      <div class="cards" id="wallet"><p class="muted">No cards yet.</p></div>
+    </div>
+
+    <div class="panel">
+      <h2 style="margin:0 0 4px;font-size:18px">Add a card</h2>
+      <p class="note">PayPal sandbox: use a test card from your developer dashboard (Testing Tools, Card Testing). Never a real card.</p>
+      <label for="which">Which card is this?</label>
+      <select id="which"></select>
+      <label>Name on card</label><div id="name" class="field"></div>
+      <label>Card number</label><div id="number" class="field"></div>
+      <label>Expiry</label><div id="expiry" class="field"></div>
+      <label>Security code</label><div id="cvv" class="field"></div>
+      <label style="font-weight:400"><input type="checkbox" id="makeDefault"> Make this my default card (what I'd use without AgentPay)</label>
+      <p><button id="save" disabled>Save card to PayPal</button></p>
+      <p class="msg" id="msg" role="status"></p>
+    </div>
+  </main>
+  <script src="/connect.js"></script>
+</body>
+</html>

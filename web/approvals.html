@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; connect-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'">
+  <title>Approvals · AgentPay</title>
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+  <header><div class="in"><b>AgentPay</b><nav><a href="/">Wallet</a><a href="/approvals" aria-current="page">Approvals</a><a href="/receipts">Receipts</a></nav></div></header>
+  <main>
+    <h1>Waiting for you</h1>
+    <p class="sub">Purchases your agent tried that are outside your spending rules. Nothing is charged until you approve.</p>
+    <div id="list"></div>
+    <div class="panel">
+      <h2 style="margin:0 0 4px;font-size:18px">Your rules</h2>
+      <label for="per">Most an agent can spend on one purchase ($)</label><input type="number" id="per" min="1">
+      <label for="month">Monthly budget ($)</label><input type="number" id="month" min="1">
+      <label for="cats">Categories that always need approval (comma-separated)</label><input type="text" id="cats">
+      <p><button id="savePolicy">Save rules</button></p>
+      <p class="msg" id="msg" role="status"></p>
+    </div>
+  </main>
+  <script src="/approvals.js"></script>
+</body>
+</html>
