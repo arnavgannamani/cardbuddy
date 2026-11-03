@@ -8,7 +8,8 @@ header b { font-size: 20px; } header nav { float: right; } header nav a { color:
 main { padding: 28px 16px 64px; }
 h1 { font-size: 28px; margin: 0 0 6px; letter-spacing: -0.02em; }
 .sub { color: var(--muted); margin: 0 0 24px; }
-.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 20px; margin-bottom: 18px; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 20px; margin-bottom: 18px; overflow-x: auto; } /* a wide table scrolls inside its panel, not the page */
+main { min-width: 0; }
 label { display: block; font-weight: 600; font-size: 14px; margin: 12px 0 6px; }
 select, input[type=number], input[type=text] { width: 100%; font: inherit; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
 .field { min-height: 52px; }
@@ -30,4 +31,4 @@ td.r, th.r { text-align: right; }
 .big { font-size: 34px; font-weight: 600; letter-spacing: -0.02em; }
 .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .warn { background: var(--warn-bg); color: var(--warn); border-radius: 10px; padding: 10px 12px; font-size: 14px; }
-@media (max-width: 600px) { .stats { grid-template-columns: 1fr; } header nav { float: none; display: block; margin-top: 6px; } header nav a { margin: 0 14px 0 0; } }
+@media (max-width: 600px) { .stats { grid-template-columns: 1fr; } header nav { float: none; display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 6px; } header nav a { margin: 0; } }
