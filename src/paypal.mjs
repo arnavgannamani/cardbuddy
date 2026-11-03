@@ -21,7 +21,7 @@ async function accessToken() {
 async function api(method, path, body) {
   const r = await fetch(BASE + path, { method, signal: AbortSignal.timeout(20000), body: body && JSON.stringify(body),
     headers: { Authorization: 'Bearer ' + await accessToken(), 'Content-Type': 'application/json', 'PayPal-Request-Id': randomUUID() } });
-  const out = await r.json().catch(() => ({}));
+  const out = r.status === 204 ? {} : await r.json().catch(() => ({}));
   if (!r.ok) {
     const detail = (out.details || []).map(d => d.issue + (d.description ? ': ' + d.description : '')).join('; ');
     throw new Bad('PayPal said no (HTTP ' + r.status + '): ' + (out.message || out.name || 'unknown error') + (detail ? ' [' + detail + ']' : ''));
@@ -40,6 +40,12 @@ export async function createPaymentToken(setupTokenId) {
   const r = await api('POST', '/v3/vault/payment-tokens', { payment_source: { token: { id: setupTokenId, type: 'SETUP_TOKEN' } } });
   const card = (r.payment_source && r.payment_source.card) || {};
   return { vaultId: r.id, customerId: r.customer && r.customer.id, brand: card.brand || null, last4: card.last_digits || null, expiry: card.expiry || null };
+}
+
+// Removes a saved card from PayPal's vault. A token PayPal no longer has is fine: the goal is that it's gone.
+export async function deletePaymentToken(vaultId) {
+  try { await api('DELETE', '/v3/vault/payment-tokens/' + encodeURIComponent(vaultId)); }
+  catch (e) { if (!/HTTP 404/.test(e.message)) throw e; }
 }
 
 // Paying with a saved card while the person isn't there: a merchant-initiated, unscheduled charge on the stored card.

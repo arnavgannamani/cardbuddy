@@ -12,10 +12,21 @@
   function showWallet() {
     api('/api/wallet').then(function (w) {
       $('wallet').innerHTML = w.length ? w.map(function (c) {
-        return '<div class="card"><span><b>' + esc(c.card) + '</b><br><small>' + esc((c.brand || 'Card') + ' ending ' + (c.last4 || '????')) + '</small></span>' + (c.isDefault ? '<span class="tag">Default</span>' : '') + '</div>';
+        return '<div class="card"><span><b>' + esc(c.card) + '</b><br><small>' + esc((c.brand || 'Card') + ' ending ' + (c.last4 || '????')) + '</small></span><span>' +
+          (c.isDefault ? '<span class="tag">Default</span> ' : '<button class="ghost" data-default="' + esc(c.vaultId) + '">Make default</button> ') +
+          '<button class="ghost" data-remove="' + esc(c.vaultId) + '" data-name="' + esc(c.card) + '">Remove</button></span></div>';
       }).join('') : '<p class="muted">No cards yet.</p>';
     });
   }
+  $('wallet').addEventListener('click', function (e) {
+    var rm = e.target.getAttribute('data-remove'), def = e.target.getAttribute('data-default');
+    if (rm && !window.confirm('Remove ' + e.target.getAttribute('data-name') + '? It\'s also deleted from PayPal\'s vault.')) return;
+    if (!rm && !def) return;
+    e.target.disabled = true;
+    (rm ? api('/api/wallet/remove', { vaultId: rm }) : api('/api/wallet/default', { vaultId: def }))
+      .then(function () { say(rm ? 'Card removed.' : 'Default card changed.'); showWallet(); })
+      .catch(function (err) { say(err.message, true); showWallet(); });
+  });
 
   api('/api/cards').then(function (cards) {
     $('which').innerHTML = '<option value="">Choose…</option>' + cards.sort(function (a, b) { return a.name.localeCompare(b.name); })

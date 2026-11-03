@@ -24,6 +24,25 @@ export async function addCard({ setupTokenId, cardId, makeDefault }) {
   return { vaultId: entry.vaultId, card: entry.card, brand: entry.brand, last4: entry.last4, isDefault: entry.isDefault };
 }
 
+// Removes a card from the wallet and from PayPal's vault. If it was the default, the first card left becomes default.
+export async function removeCard({ vaultId } = {}) {
+  const w = load('wallet'), card = w.find(x => x.vaultId === vaultId);
+  if (!card) throw new Bad('That card isn\'t in the wallet.');
+  await paypal.deletePaymentToken(vaultId);
+  const left = w.filter(x => x.vaultId !== vaultId);
+  if (card.isDefault && left.length) left[0].isDefault = true;
+  save('wallet', left);
+  return { removed: card.card, wallet: wallet() };
+}
+
+export function setDefault({ vaultId } = {}) {
+  const w = load('wallet');
+  if (!w.some(x => x.vaultId === vaultId)) throw new Bad('That card isn\'t in the wallet.');
+  w.forEach(x => { x.isDefault = x.vaultId === vaultId; });
+  save('wallet', w);
+  return wallet();
+}
+
 function parsePurchase(p = {}) {
   const amount = Number(p.amount);
   if (!isFinite(amount) || amount < 0.01 || amount > 10000) throw new Bad('amount must be from $0.01 to $10,000.');
