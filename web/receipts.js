@@ -25,7 +25,7 @@
         var rail = r.betterRail ? '<small>Through ' + esc(r.betterRail.rail === 'paypal' ? 'PayPal' : 'Venmo') + ' the ' + esc(r.betterRail.card) + ' would earn ' + r.betterRail.percentBack + '%</small>' : '';
         var gain = paid && r.earned > r.defaultEarned;
         return '<tr><td class="num">' + esc(when) + '</td>' +
-          '<td><b>' + esc(r.description || r.merchant) + '</b>' + (paid ? '' : '<span class="pill neg">' + (r.status === 'failed' ? 'Not paid' : esc(r.status)) + '</span>') +
+          '<td><b>' + esc(r.description || r.merchant) + '</b>' + (r.dryRun ? '<span class="pill">Dry run</span>' : '') + (paid ? '' : '<span class="pill neg">' + (r.status === 'failed' ? 'Not paid' : esc(r.status)) + '</span>') +
           '<br><small>' + esc(r.site || r.merchant) + ' · ' + esc(labels[r.category] || r.category) + '</small></td>' +
           '<td>' + esc(r.card) + '<br><small>' + r.percentBack + '% back, ' + esc(String(r.why).toLowerCase()) + '</small>' + fell + rail + '</td>' +
           '<td class="r">' + money(r.amount) + '</td>' +

@@ -4,13 +4,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'data');
+// AGENTPAY_DATA points tests at a throwaway folder so they never touch the real wallet.
+const DIR = process.env.AGENTPAY_DATA || path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'data');
 const DEFAULTS = {
   wallet: [],
   // Purchases above perPurchase, past the monthly budget, or in these categories wait for the person's approval.
   policy: { perPurchase: 100, monthlyBudget: 500, approveCategories: ['travel'] },
   pending: [],
-  receipts: []
+  receipts: [],
+  declined: []
 };
 
 export function load(name) {

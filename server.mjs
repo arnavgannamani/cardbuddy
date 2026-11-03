@@ -11,6 +11,7 @@ import { createSetupToken } from './src/paypal.mjs';
 
 const WEB = path.join(path.dirname(fileURLToPath(import.meta.url)), 'web');
 const PORT = Number(process.env.PORT || 4242);
+if (process.argv.includes('--dry-run')) process.env.AGENTPAY_DRY_RUN = '1'; // npm run dry
 const PAGES = { '/': 'index.html', '/approvals': 'approvals.html', '/receipts': 'receipts.html', '/simulation': 'simulation.html' };
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.json': 'application/json; charset=utf-8', '.woff2': 'font/woff2' }; // the charset keeps send() from re-encoding a file as JSON
 
@@ -27,6 +28,7 @@ const ROUTES = {
   'GET /api/pending': () => ap.pending(),
   'POST /api/approve': b => ap.approve(b.id),
   'POST /api/decline': b => ap.decline(b.id),
+  'POST /api/purchase-status': b => ap.purchaseStatus(b.id),
   'GET /api/receipts': () => ap.receipts(),
   'GET /api/policy': () => ap.policy(),
   'POST /api/policy': b => ap.setPolicy(b)
@@ -62,4 +64,9 @@ const server = http.createServer(async (req, res) => {
   }
   send(404, 'Not found', 'text/plain');
 });
-server.listen(PORT, '127.0.0.1', () => console.log('AgentPay running at http://localhost:' + PORT));
+server.on('error', e => {
+  if (e.code !== 'EADDRINUSE') throw e;
+  console.error(`Port ${PORT} is already in use, probably by AgentPay running in another terminal. Stop that one (Ctrl+C there) and start again.`);
+  process.exit(1);
+});
+server.listen(PORT, '127.0.0.1', () => console.log('AgentPay running at http://localhost:' + PORT + (process.env.AGENTPAY_DRY_RUN === '1' ? ' (dry run: PayPal is never called)' : '')));

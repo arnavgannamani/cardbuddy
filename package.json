@@ -8,6 +8,8 @@
   "license": "MIT",
   "scripts": {
     "start": "node server.mjs",
-    "test": "node test/choose.test.mjs && node test/fallback.test.mjs"
+    "dry": "node server.mjs --dry-run",
+    "mcp": "node mcp/server.mjs",
+    "test": "node test/choose.test.mjs && node test/fallback.test.mjs && node test/mcp.test.mjs"
   }
 }

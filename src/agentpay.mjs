@@ -84,8 +84,15 @@ function receiptFrom(purchase, c, used, extra) {
   };
 }
 
-async function charge(purchase, c) {
-  const receipt = await chargeInOrder(purchase, c, load('wallet'));
+// AGENTPAY_DRY_RUN=1: everything runs (card choice, rules, fallback, receipts) but PayPal is never called, for tests
+// and demos. The receipt says it was a dry run.
+const dryRun = () => process.env.AGENTPAY_DRY_RUN === '1';
+async function dryRunPay() {
+  return { orderId: 'DRYRUN-' + randomUUID().slice(0, 8).toUpperCase(), status: 'COMPLETED', captureStatus: 'COMPLETED', dryRun: true };
+}
+
+async function charge(purchase, c, extra = {}) {
+  const receipt = { ...await chargeInOrder(purchase, c, load('wallet'), dryRun() ? dryRunPay : undefined), ...extra, ...(dryRun() ? { dryRun: true } : {}) };
   const receipts = load('receipts');
   receipts.push(receipt);
   save('receipts', receipts);
@@ -112,13 +119,28 @@ export async function approve(id) {
   const list = load('pending'), held = list.find(x => x.id === id);
   if (!held) throw new Bad('No purchase is waiting with that id.');
   save('pending', list.filter(x => x.id !== id));
-  return charge(held.purchase, choose(load('wallet'), held.purchase));
+  return charge(held.purchase, choose(load('wallet'), held.purchase), { heldId: id });
 }
 export function decline(id) {
-  const list = load('pending');
-  if (!list.some(x => x.id === id)) throw new Bad('No purchase is waiting with that id.');
+  const list = load('pending'), held = list.find(x => x.id === id);
+  if (!held) throw new Bad('No purchase is waiting with that id.');
   save('pending', list.filter(x => x.id !== id));
+  const declined = load('declined');
+  declined.push({ id, at: new Date().toISOString(), purchase: held.purchase });
+  save('declined', declined);
   return { declined: id };
+}
+
+// What happened to a purchase that was held: still waiting, approved and paid (with its receipt), or declined.
+export function purchaseStatus(id) {
+  if (typeof id !== 'string' || !id) throw new Bad('pendingId is required.');
+  const waiting = load('pending').find(x => x.id === id);
+  if (waiting) return { status: 'waiting_for_approval', reasons: waiting.reasons, since: waiting.at };
+  const receipt = load('receipts').find(r => r.heldId === id);
+  if (receipt) return { status: receipt.status === 'paid' ? 'approved_and_paid' : 'approved_but_payment_failed', receipt };
+  const no = load('declined').find(x => x.id === id);
+  if (no) return { status: 'declined', at: no.at };
+  throw new Bad('No purchase with that id.');
 }
 
 export function receipts() {
