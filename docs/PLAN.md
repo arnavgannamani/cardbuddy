@@ -36,30 +36,58 @@ Claude / any MCP agent ──► agentpay-mcp ──► policy check ──► c
 - `extension/` (stretch): PayPal/Venmo checkout detection in the existing PointMaxx extension.
 - A demo store with a few sandbox merchants (restaurant, grocery, electronics) so the purchases have real categories.
 
-## Days
+## Done (as of Tue Nov 3)
 
-| Day | Work | Owner |
-|---|---|---|
-| Tue Nov 3 | Agree the idea. PayPal sandbox app with Vault and Advanced Checkout enabled. Devpost team. | Both |
-| Wed Nov 4 | Spike: vault a sandbox card with Card Fields, then create and capture an order with its vault ID. This is the riskiest part, so do it first. | Claude + Arnav |
-| Thu Nov 5 | Card choice: purchase → category → best vaulted card, including PayPal/Venmo checkout bonuses. Tests. | Claude |
-| Fri Nov 6 | MCP tools (`wallet`, `choose_card`, `pay`, `approve`, `receipts`) and the spending policy. | Claude |
-| Sat Nov 7 | Web pages: connect wallet, receipts. Demo store. | Mihir + Claude |
-| Sun Nov 8 | End-to-end run in Claude Desktop. Fix what breaks. | Both |
-| Mon Nov 9 | Stretch: extension at PayPal/Venmo checkout. README run steps. Hosted demo. | Mihir |
-| Tue Nov 10 | Record the video (under 3 min). Devpost write-up. Make the repo public. | Both |
-| Wed Nov 11 | Final check from a clean clone, then submit. | Arnav |
+- Wallet: cards vaulted with PayPal Card Fields (Vault v3); make default, remove.
+- Unattended payments: Orders v2 with the vault ID and stored-credential flags; works in the sandbox.
+- Card choice per purchase from the PointMaxx engine, with automatic fallback to the next-best card on a decline.
+- Spending rules (per purchase, monthly budget, always-ask categories); held purchases; approve or decline.
+- Receipts against the default card; the simulation page (a year of purchases: +$450.99, +106%).
+- The agent's MCP server (`mcp/server.mjs`, connected by `.mcp.json`): get_wallet, recommend_card, pay,
+  purchase_status, list_receipts, spending_rules. The agent can read the rules but not change them.
+- Dry-run mode (`npm run dry`) and an end-to-end test of the agent flow that never calls PayPal.
+- Web app restyled (taste-skill, achromatic ledger in PointMaxx colours), smooth page changes.
 
-## Open questions (answer in the Wed spike)
+Answered: unattended charges work in the sandbox (question 1); the person names each card when vaulting it (question 3).
 
-1. **Paying with a saved card without the person present.** Orders v2 can save cards to the vault and reuse their vault
-   ID, but merchant-initiated charges may need extra setup or approval on PayPal's side. If the sandbox won't allow it,
-   the fallback is: AgentPay creates the order and sends the person a PayPal approval link with the recommended card
-   named. That still demos the card choice and the policy, just with one tap per purchase.
-2. **Venmo in the sandbox.** PayPal's docs say Venmo is not fully supported in the sandbox. Plan to show the Venmo
-   Card's 3% in the card choice and receipts, and use PayPal for the actual sandbox payments.
-3. **Which card is which.** The vault returns the brand and last four digits, not the product (Gold vs Platinum). The
-   person names each card once when they connect it.
+## Remaining
+
+| When | Work |
+|---|---|
+| Now | **Name**: CardBuddy (Mihir's pick) vs PointMaxx Route; check it's free (app stores, domain, USPTO). Then rename everywhere. |
+| Nov 4 | **Duplicate-order rule** (same merchant and amount within 24 hours). **Hold notifications by email** (needs `GMAIL_USER` and `GMAIL_APP_PASSWORD` in `.env` and a recipient). |
+| Nov 5 | **One real sandbox run through the agent** (not dry run), for a real PayPal order id in the video. Raise the demo budget to $2,500. |
+| Nov 5–6 | **Hardening**: try to break it (bad inputs, PayPal down, server restarted mid-approval, two approvals at once, empty wallet) and fix what breaks. |
+| Nov 6–7 | **Hosted demo** so anyone can try it without installing. Seed a demo wallet. |
+| Nov 7–8 | **README a judge can follow in 5 minutes**: clone, sandbox keys, `npm start`, open in Claude Code. Sandbox credentials safe to share. |
+| Nov 8 | **Make the repo public** after scanning git history for secrets; MIT license visible in the About section. Check PayPal Cashback and Venmo card terms before claiming them. Stretch: PayPal/Venmo checkout as a rail. |
+| Nov 9–10 | **Video under 3 minutes**, public on YouTube: problem → agent buys groceries, right card pays → TV held, phone buzzes → approve/decline → receipts → simulation. No logos, card art or music. |
+| Nov 10 | **Devpost write-up**: problem, how it works, PayPal APIs used, the numbers, tokens saved, and a "built during the hackathon" paragraph. |
+| Wed Nov 11 | Final check from a clean clone, then submit. Deadline Thu Nov 12, 12:00 pm PT. |
+| Skip unless time | Extension at PayPal checkout. |
+
+## What the official rules require (read Nov 3)
+
+- **Existing work is allowed** if the project was new or significantly updated after Oct 1. AgentPay is a new repo built
+  in the window; the PointMaxx engine and card data existed before. Say so in the write-up.
+- **Solely owned by the entrant.** Enter as a Team (Arnav and Mihir). If PointMaxx moves into the LLC before submitting,
+  enter as the LLC instead, or move it after Nov 12.
+- **Judges must be able to run it**: public repo with an open-source license, plus a hosted demo or complete setup steps
+  with any sandbox credentials needed.
+- **Video under 3 minutes on YouTube**; no third-party trademarks or copyrighted music without permission. Avoid issuer
+  and store logos and card art; card and store names as plain text are a grey area (consider asking Devpost in writing).
+- **Judging**: a pass/fail check that PayPal and AI are central, then five equal criteria: technical implementation,
+  design, potential impact, innovation, presentation. Judging may be partly AI-assisted, so the README matters.
+- We build for the product, not for prizes: a sponsor tool goes in only if it makes AgentPay better for the person
+  using it.
+
+## What "works great" means
+
+- **It never surprises the person.** Every payment is within the rules or waits for them; every receipt says which card
+  paid and why; a decline falls back cleanly and says so.
+- **It never surprises the agent.** Every tool returns a clear result or a plain error it can act on, never a crash.
+- **It runs from a clean clone in 5 minutes,** or from a hosted link with nothing to install.
+- **Every number is honest:** rewards from published terms, points at stated values, the simulation reproducible.
 
 ## Rules
 
