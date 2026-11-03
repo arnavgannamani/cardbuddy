@@ -2,7 +2,7 @@
 // choosing a card, paying within the policy, approvals, and receipts.
 import { randomUUID } from 'node:crypto';
 import { choose, cardName, Bad } from './choose.mjs';
-import { check } from './policy.mjs';
+import { check, spentThisMonth } from './policy.mjs';
 import { load, save } from './store.mjs';
 import * as paypal from './paypal.mjs';
 
@@ -47,6 +47,7 @@ function parsePurchase(p = {}) {
   const amount = Number(p.amount);
   if (!isFinite(amount) || amount < 0.01 || amount > 10000) throw new Bad('amount must be from $0.01 to $10,000.');
   if (p.description != null && (typeof p.description !== 'string' || p.description.length > 120)) throw new Bad('description must be up to 120 characters.');
+  if (p.merchant != null && (typeof p.merchant !== 'string' || p.merchant.length > 100)) throw new Bad('merchant must be a name of up to 100 characters.');
   return { merchant: p.merchant, site: p.site, category: p.category, amount: money(amount), description: p.description || '' };
 }
 
@@ -64,10 +65,19 @@ export async function chargeInOrder(purchase, c, wallet, payFn = paypal.payWithV
   for (const o of order) {
     const vaultId = wallet.find(w => w.cardId === o.cardId).vaultId;
     let r;
-    try { r = await payFn({ vaultId, amount: purchase.amount, description: purchase.description || c.store, invoiceId: id }); }
-    catch (e) { if (!(e instanceof Bad)) throw e; r = { status: 'REFUSED', error: e.message }; }
-    const ok = r.status === 'COMPLETED' && (!r.captureStatus || r.captureStatus === 'COMPLETED');
-    attempts.push({ card: o.card, result: ok ? 'paid' : r.captureStatus || r.status });
+    // Each attempt gets its own invoice id: PayPal can refuse a repeated one, which would stop the fallback.
+    try { r = await payFn({ vaultId, amount: purchase.amount, description: purchase.description || c.store, invoiceId: id + '-' + (attempts.length + 1) }); }
+    catch (e) {
+      if (!(e instanceof Bad)) {
+        // A timeout or network error: PayPal may have charged this card, so trying the next one could charge twice.
+        attempts.push({ card: o.card, result: 'unknown', error: String(e && e.message || e) });
+        return receiptFrom(purchase, c, o, { id, status: 'unknown', attempts, declined: attempts.slice(0, -1).map(a => a.card) });
+      }
+      r = { status: 'REFUSED', error: e.message };
+    }
+    // A PENDING capture is money PayPal is still settling, not a decline: charging the next card would charge twice.
+    const ok = r.status === 'COMPLETED' && (!r.captureStatus || r.captureStatus === 'COMPLETED' || r.captureStatus === 'PENDING');
+    attempts.push({ card: o.card, result: ok ? 'paid' : r.captureStatus || r.status, ...(r.error ? { error: r.error } : {}) });
     if (ok) return receiptFrom(purchase, c, o, { id, status: 'paid', paypal: r, attempts, declined: attempts.slice(0, -1).map(a => a.card) });
   }
   return receiptFrom(purchase, c, order[0], { id, status: 'failed', attempts, declined: attempts.map(a => a.card) });
@@ -99,8 +109,13 @@ async function charge(purchase, c, extra = {}) {
   return receipt;
 }
 
+// One payment at a time: parallel pay calls would each pass the budget check before any of their receipts is saved.
+// ponytail: one queue for the one server process; a lock per wallet if it ever serves several people.
+let queue = Promise.resolve();
+const oneAtATime = fn => (...args) => { const run = queue.then(() => fn(...args)); queue = run.catch(() => {}); return run; };
+
 // Pays if the policy allows it; otherwise holds the purchase for approval and says why.
-export async function pay(p) {
+export const pay = oneAtATime(async function (p) {
   const purchase = parsePurchase(p), c = choose(load('wallet'), purchase);
   const verdict = check(load('policy'), load('receipts'), { ...purchase, category: c.category });
   if (!verdict.ok) {
@@ -111,16 +126,17 @@ export async function pay(p) {
     return { status: 'needs_approval', pendingId: held.id, reasons: verdict.reasons, card: c.best.card, approveAt: 'http://localhost:' + (process.env.PORT || 4242) + '/approvals' };
   }
   return charge(purchase, c);
-}
+});
 
 export function pending() { return load('pending'); }
 
-export async function approve(id) {
+export const approve = oneAtATime(async function (id) {
   const list = load('pending'), held = list.find(x => x.id === id);
   if (!held) throw new Bad('No purchase is waiting with that id.');
+  const c = choose(load('wallet'), held.purchase); // before it leaves the list: an empty wallet leaves it waiting
   save('pending', list.filter(x => x.id !== id));
-  return charge(held.purchase, choose(load('wallet'), held.purchase), { heldId: id });
-}
+  return charge(held.purchase, c, { heldId: id });
+});
 export function decline(id) {
   const list = load('pending'), held = list.find(x => x.id === id);
   if (!held) throw new Bad('No purchase is waiting with that id.');
@@ -137,7 +153,7 @@ export function purchaseStatus(id) {
   const waiting = load('pending').find(x => x.id === id);
   if (waiting) return { status: 'waiting_for_approval', reasons: waiting.reasons, since: waiting.at };
   const receipt = load('receipts').find(r => r.heldId === id);
-  if (receipt) return { status: receipt.status === 'paid' ? 'approved_and_paid' : 'approved_but_payment_failed', receipt };
+  if (receipt) return { status: { paid: 'approved_and_paid', unknown: 'approved_payment_result_unknown' }[receipt.status] || 'approved_but_payment_failed', receipt };
   const no = load('declined').find(x => x.id === id);
   if (no) return { status: 'declined', at: no.at };
   throw new Bad('No purchase with that id.');
@@ -149,7 +165,7 @@ export function receipts() {
   return { receipts: all.slice().reverse(), totals: { purchases: paid.length, spent: money(paid.reduce((s, r) => s + r.amount, 0)), earned, defaultEarned, extra: money(earned - defaultEarned) } };
 }
 
-export function policy() { return load('policy'); }
+export function policy() { return { ...load('policy'), spentThisMonth: spentThisMonth(load('receipts')) }; }
 export function setPolicy(p = {}) {
   const cur = load('policy'), next = { ...cur };
   if (p.perPurchase != null) { if (!(p.perPurchase > 0 && p.perPurchase <= 10000)) throw new Bad('perPurchase must be from $1 to $10,000.'); next.perPurchase = Number(p.perPurchase); }

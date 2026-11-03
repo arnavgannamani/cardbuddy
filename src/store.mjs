@@ -15,11 +15,18 @@ const DEFAULTS = {
   declined: []
 };
 
+// Only a missing file means "use the defaults". A corrupt one throws: read as empty, it would zero this month's spend
+// and be overwritten (history and vault tokens gone) on the next save.
 export function load(name) {
-  try { return JSON.parse(fs.readFileSync(path.join(DIR, name + '.json'), 'utf8')); }
-  catch { return structuredClone(DEFAULTS[name]); }
+  let text;
+  try { text = fs.readFileSync(path.join(DIR, name + '.json'), 'utf8'); }
+  catch (e) { if (e.code === 'ENOENT') return structuredClone(DEFAULTS[name]); throw e; }
+  return JSON.parse(text);
 }
+// Written to a temp file and renamed into place, so a crash mid-write leaves the old file, never half of the new one.
 export function save(name, value) {
   fs.mkdirSync(DIR, { recursive: true });
-  fs.writeFileSync(path.join(DIR, name + '.json'), JSON.stringify(value, null, 2) + '\n');
+  const file = path.join(DIR, name + '.json');
+  fs.writeFileSync(file + '.tmp', JSON.stringify(value, null, 2) + '\n');
+  fs.renameSync(file + '.tmp', file);
 }

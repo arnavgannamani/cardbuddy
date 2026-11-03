@@ -34,20 +34,38 @@ const ROUTES = {
   'POST /api/policy': b => ap.setPolicy(b)
 };
 
+// What the agent's MCP server calls. Every other POST (approve, decline, rules, cards) is the person's, from these pages.
+const AGENT_ROUTES = new Set(['POST /api/recommend', 'POST /api/pay', 'POST /api/purchase-status']);
+const HOSTS = ['localhost:' + PORT, '127.0.0.1:' + PORT], ORIGINS = HOSTS.map(h => 'http://' + h);
+
 function readBody(req) {
   return new Promise((resolve, reject) => {
     let s = '';
     req.on('data', d => { s += d; if (s.length > 100000) { reject(new Bad('Request too large.')); req.destroy(); } });
-    req.on('end', () => { try { resolve(s ? JSON.parse(s) : {}); } catch { reject(new Bad('Body must be JSON.')); } });
+    req.on('end', () => {
+      let v; try { v = s ? JSON.parse(s) : {}; } catch { return reject(new Bad('Body must be JSON.')); }
+      if (!v || typeof v !== 'object' || Array.isArray(v)) return reject(new Bad('Body must be a JSON object.'));
+      resolve(v);
+    });
   });
 }
 
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost'), key = req.method + ' ' + url.pathname;
-  const send = (code, body, type = 'application/json', cache = 'no-store') => { res.writeHead(code, { 'Content-Type': type, 'Cache-Control': cache, 'X-Content-Type-Options': 'nosniff' }); res.end(type === 'application/json' ? JSON.stringify(body) : body); };
+  const send = (code, body, type = 'application/json', cache = 'no-store') => {
+    // No framing: another site can't put the approvals page in an invisible frame and trick a click on Approve.
+    res.writeHead(code, { 'Content-Type': type, 'Cache-Control': cache, 'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY', 'Content-Security-Policy': "frame-ancestors 'none'" });
+    res.end(type === 'application/json' ? JSON.stringify(body) : body);
+  };
+  // Only requests addressed to localhost: a site that rebinds its own domain to 127.0.0.1 can't read the wallet.
+  if (!HOSTS.includes(req.headers.host)) return send(403, { error: 'Wrong host.' });
   if (ROUTES[key]) {
-    // Only this page may call the API: no other site can drive payments from a visitor's browser.
-    if (req.method === 'POST' && req.headers.origin && req.headers.origin !== 'http://localhost:' + PORT) return send(403, { error: 'Wrong origin.' });
+    // Only these pages may call the API: no other site can drive payments from a visitor's browser. The person's
+    // routes also need the page's Origin, so a plain curl from the agent's shell can't approve its own purchase.
+    // ponytail: Origin is just a header, and an agent that sets it, or edits data/, gets past this. Rules the agent
+    // truly can't skip need the agent kept off this machine's localhost and files, or a check only the person can pass.
+    const origin = req.headers.origin;
+    if (req.method === 'POST' && (origin ? !ORIGINS.includes(origin) : !AGENT_ROUTES.has(key))) return send(403, { error: 'Wrong origin.' });
     try { return send(200, await ROUTES[key](req.method === 'POST' ? await readBody(req) : {})); }
     catch (e) {
       if (e instanceof Bad) return send(400, { error: e.message });

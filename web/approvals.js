@@ -27,11 +27,10 @@
     }).catch(function (e) { $('listMsg').textContent = e.message; });
   }
 
-  // This month's paid spend against the budget, the same sum the rules check.
+  // This month's spend against the budget: the server's sum, the same one the rules check.
   function showMonth() {
-    return Promise.all([api('/api/policy'), api('/api/receipts')]).then(function (res) {
-      var policy = res[0], d = res[1], month = new Date().toISOString().slice(0, 7);
-      var spent = d.receipts.filter(function (r) { return r.status === 'paid' && r.at.slice(0, 7) === month; }).reduce(function (s, r) { return s + r.amount; }, 0);
+    return api('/api/policy').then(function (policy) {
+      var spent = policy.spentThisMonth;
       var share = Math.min(1, spent / policy.monthlyBudget);
       $('spent').textContent = money(spent) + ' of ' + money(policy.monthlyBudget);
       $('meter').style.width = (share * 100).toFixed(1) + '%';
@@ -46,7 +45,12 @@
     e.target.disabled = true;
     if (a) e.target.textContent = 'Paying…';
     (a ? api('/api/approve', { id: a }) : api('/api/decline', { id: d }))
-      .then(function () { show(); showMonth(); })
+      .then(function (r) {
+        $('listMsg').textContent = !a || r.status === 'paid' ? '' : r.status === 'unknown'
+          ? 'PayPal didn\'t answer in time, so this may or may not have been charged. Check PayPal before trying again.'
+          : 'Not paid: every card was declined (' + r.attempts.map(function (t) { return t.card; }).join(', ') + ').';
+        show(); showMonth();
+      })
       .catch(function (err) { $('listMsg').textContent = err.message; show(); });
   });
 

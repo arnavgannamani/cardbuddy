@@ -31,7 +31,8 @@ mcp.stdout.on('data', d => {
 });
 const rpc = (method, params) => new Promise(ok => { const id = next++; waiting.set(id, ok); mcp.stdin.write(JSON.stringify({ jsonrpc: '2.0', id, method, params }) + '\n'); });
 const call = async (name, args) => { const r = (await rpc('tools/call', { name, arguments: args })).result; return r.isError ? { error: r.content[0].text } : r.structuredContent; };
-const post = (p, body) => fetch(env.AGENTPAY_URL + p, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json());
+// The person, from the approvals page (the browser sends its Origin). Without it, approve is refused.
+const post = (p, body, headers = { Origin: env.AGENTPAY_URL }) => fetch(env.AGENTPAY_URL + p, { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, body: JSON.stringify(body) });
 
 try {
   const init = (await rpc('initialize', { protocolVersion: '2025-06-18' })).result;
@@ -62,6 +63,8 @@ try {
 
   const flight = await call('pay', { amount: 89, site: 'delta.com', description: 'Flight change fee' });
   assert.equal(flight.status, 'needs_approval');
+  assert.equal((await post('/api/approve', { id: flight.pendingId }, {})).status, 403); // the agent's shell can't approve it
+  assert.equal((await call('pay', { amount: 89, site: 'delta.com', category: 'dining', description: 'x' })).status, 'needs_approval'); // nor call it dining
   await post('/api/approve', { id: flight.pendingId });
   const s = await call('purchase_status', { pendingId: flight.pendingId });
   assert.equal(s.status, 'approved_and_paid'); assert.equal(s.receipt.amount, 89);

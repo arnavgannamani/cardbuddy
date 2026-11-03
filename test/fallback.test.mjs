@@ -31,4 +31,12 @@ assert.equal(r.status, 'failed'); assert.equal(r.attempts.length, 3);
 r = await chargeInOrder(purchase, c, wallet, async () => paid);
 assert.equal(r.card, 'Amex Blue Cash Preferred'); assert.deepEqual(r.declined, []);
 
+// 5. PayPal times out on the best card: stop, don't charge the next one (the first may have gone through).
+r = await chargeInOrder(purchase, c, wallet, async () => { throw new DOMException('timed out', 'TimeoutError'); });
+assert.equal(r.status, 'unknown'); assert.equal(r.attempts.length, 1);
+
+// 6. A PENDING capture is paid, not declined: no second card is charged.
+r = await chargeInOrder(purchase, c, wallet, async () => ({ status: 'COMPLETED', captureStatus: 'PENDING' }));
+assert.equal(r.status, 'paid'); assert.equal(r.attempts.length, 1);
+
 console.log('fallback ok');

@@ -24,13 +24,14 @@ export function holdable() { return E.HOLDABLE.map(c => ({ id: c.id, name: c.nam
 export function cardName(id) { const c = E.HOLDABLE.find(x => x.id === id); return c ? c.name : null; }
 
 // Where the purchase happens: a known store's name and category (engine/stores.json), or a merchant name plus the
-// category the caller gives.
+// category the caller gives. A known store's category can't be overridden: calling delta.com "dining" would skip an
+// always-ask rule on travel. For an unknown merchant the category is the agent's word.
 export function storeFor({ merchant, site, category } = {}) {
   if (site != null) {
     if (typeof site !== 'string' || site.length > 200) throw new Bad('site must be a website of up to 200 characters.');
     const host = site.trim().toLowerCase().replace(/^https?:\/\//, '').split(/[/?#]/)[0];
     const key = globalThis.PointMaxxStore(STORES, host);
-    if (key) return { name: STORES[key][0], cat: category && CATEGORIES.includes(category) ? category : STORES[key][1], site: key, warn: STORES[key][2] || null };
+    if (key) return { name: STORES[key][0], cat: STORES[key][1], site: key, warn: STORES[key][2] || null };
   }
   if (!CATEGORIES.includes(category)) throw new Bad('Give a known site, or a category: ' + CATEGORIES.join(', ') + '.');
   if (typeof merchant !== 'string' || !merchant.trim() || merchant.length > 100) throw new Bad('merchant must be a name of up to 100 characters.');

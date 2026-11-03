@@ -53,7 +53,7 @@ const TOOLS = [
   },
   {
     name: 'pay',
-    description: 'Pay for a purchase through PayPal with the card that earns the most. If the purchase is outside the person\'s spending rules it is NOT paid: the result has status "needs_approval", a pendingId and the reasons. Then tell the person it is waiting for their approval and check later with purchase_status. Never retry, split a purchase into smaller ones, or change the amount to get under the rules.',
+    description: 'Pay for a purchase through PayPal with the card that earns the most. If the purchase is outside the person\'s spending rules it is NOT paid: the result has status "needs_approval", a pendingId and the reasons. Then tell the person it is waiting for their approval and check later with purchase_status. Never retry, split a purchase into smaller ones, or change the amount to get under the rules. If the status is "unknown", PayPal didn\'t answer in time and may have charged: do not pay again, tell the person to check PayPal.',
     inputSchema: { type: 'object', additionalProperties: false, required: ['amount', 'description'], properties: PURCHASE },
     run: async a => {
       const r = await api('/api/pay', purchase(a));
@@ -84,11 +84,9 @@ const TOOLS = [
     description: 'The person\'s spending rules (most for one purchase, monthly budget, categories that always need approval) and how much has been spent this month. Read-only: only the person can change them.',
     inputSchema: { type: 'object', additionalProperties: false, properties: {} },
     run: async () => {
-      const [p, d] = await Promise.all([api('/api/policy'), api('/api/receipts')]);
-      const month = new Date().toISOString().slice(0, 7);
-      const spent = d.receipts.filter(r => r.status === 'paid' && r.at.slice(0, 7) === month).reduce((s, r) => s + r.amount, 0);
+      const p = await api('/api/policy'), spent = p.spentThisMonth;
       return { perPurchase: p.perPurchase, monthlyBudget: p.monthlyBudget, alwaysAskFor: p.approveCategories,
-        spentThisMonth: Math.round(spent * 100) / 100, leftThisMonth: Math.max(0, Math.round((p.monthlyBudget - spent) * 100) / 100) };
+        spentThisMonth: spent, leftThisMonth: Math.max(0, Math.round((p.monthlyBudget - spent) * 100) / 100) };
     }
   }
 ];
