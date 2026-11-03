@@ -5,29 +5,66 @@
     return fetch(path, body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {})
       .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || 'Request failed'); return j; }); });
   }
-  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
-  function money(x) { return '$' + Number(x).toFixed(2); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function money(x) { return '$' + Number(x).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+  var labels = {};
 
   function show() {
-    api('/api/pending').then(function (list) {
+    return api('/api/pending').then(function (list) {
+      $('heldCount').textContent = list.length ? list.length + ' waiting' : '';
       $('list').innerHTML = list.length ? list.map(function (p) {
         var what = p.purchase.description || p.purchase.merchant || p.purchase.site || 'Purchase';
-        return '<div class="panel"><div class="big">' + money(p.purchase.amount) + '</div><p><b>' + esc(what) + '</b><br><span class="muted">Would pay with ' + esc(p.card) + ' (' + p.percentBack + '% back)</span></p>' +
-          '<p class="warn">Held because ' + esc(p.reasons.join('; ')) + '.</p>' +
-          '<p><button data-approve="' + esc(p.id) + '">Approve and pay</button> <button class="ghost" data-decline="' + esc(p.id) + '">Decline</button></p></div>';
-      }).join('') : '<div class="panel"><p class="muted">Nothing waiting.</p></div>';
+        var where = [p.purchase.site || p.purchase.merchant, labels[p.purchase.category]].filter(Boolean).join(' · ');
+        var when = new Date(p.at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+        return '<div class="held"><div class="held-main"><b class="amount">' + money(p.purchase.amount) + '</b><div><b>' + esc(what) + '</b><small>' + esc(where ? where + ' · ' + when : when) + '</small></div></div>' +
+          '<ul class="why">' + p.reasons.map(function (r) { return '<li>' + esc(cap(r)) + '</li>'; }).join('') + '</ul>' +
+          '<div class="held-foot"><small>If approved: <b>' + esc(p.card) + '</b>, ' + p.percentBack + '% back (' + money(p.purchase.amount * p.percentBack / 100) + ')</small>' +
+          '<span class="acts"><button class="ghost" data-decline="' + esc(p.id) + '">Decline</button><button data-approve="' + esc(p.id) + '">Approve and pay</button></span></div></div>';
+      }).join('') : '<div class="empty-state"><b>Nothing waiting</b><p>When your agent tries a purchase over your limits, or in a category you want to see first, it stops here instead of being charged.</p></div>';
+      if (window.agentpayRefreshCount) window.agentpayRefreshCount();
+    }).catch(function (e) { $('listMsg').textContent = e.message; });
+  }
+
+  // This month's paid spend against the budget, the same sum the rules check.
+  function showMonth() {
+    return Promise.all([api('/api/policy'), api('/api/receipts')]).then(function (res) {
+      var policy = res[0], d = res[1], month = new Date().toISOString().slice(0, 7);
+      var spent = d.receipts.filter(function (r) { return r.status === 'paid' && r.at.slice(0, 7) === month; }).reduce(function (s, r) { return s + r.amount; }, 0);
+      var share = Math.min(1, spent / policy.monthlyBudget);
+      $('spent').textContent = money(spent) + ' of ' + money(policy.monthlyBudget);
+      $('meter').style.width = (share * 100).toFixed(1) + '%';
+      $('left').textContent = spent >= policy.monthlyBudget ? 'Budget used. Every purchase waits for you until next month.' : money(policy.monthlyBudget - spent) + ' left before purchases wait for you.';
+      return policy;
     });
   }
+
   $('list').addEventListener('click', function (e) {
     var a = e.target.getAttribute('data-approve'), d = e.target.getAttribute('data-decline');
     if (!a && !d) return;
     e.target.disabled = true;
-    (a ? api('/api/approve', { id: a }) : api('/api/decline', { id: d })).then(show).catch(function (err) { $('msg').textContent = err.message; show(); });
+    if (a) e.target.textContent = 'Paying…';
+    (a ? api('/api/approve', { id: a }) : api('/api/decline', { id: d }))
+      .then(function () { show(); showMonth(); })
+      .catch(function (err) { $('listMsg').textContent = err.message; show(); });
   });
-  api('/api/policy').then(function (p) { $('per').value = p.perPurchase; $('month').value = p.monthlyBudget; $('cats').value = p.approveCategories.join(', '); });
+
+  api('/api/config').then(function (cfg) {
+    labels = cfg.labels || {};
+    return showMonth().then(function (p) {
+      $('per').value = p.perPurchase; $('month').value = p.monthlyBudget;
+      $('cats').innerHTML = (cfg.categories || []).map(function (c) {
+        return '<label class="check"><input type="checkbox" value="' + esc(c) + '"' + (p.approveCategories.indexOf(c) >= 0 ? ' checked' : '') + '> ' + esc(labels[c] || c) + '</label>';
+      }).join('');
+      return show();
+    });
+  }).catch(function (e) { $('msg').textContent = e.message; });
+
   $('savePolicy').onclick = function () {
-    api('/api/policy', { perPurchase: Number($('per').value), monthlyBudget: Number($('month').value), approveCategories: $('cats').value.split(',').map(function (s) { return s.trim(); }).filter(Boolean) })
-      .then(function () { $('msg').textContent = 'Saved.'; }).catch(function (e) { $('msg').textContent = e.message; });
+    var chosen = [].map.call(document.querySelectorAll('#cats input:checked'), function (i) { return i.value; });
+    $('msg').className = 'msg';
+    api('/api/policy', { perPurchase: Number($('per').value), monthlyBudget: Number($('month').value), approveCategories: chosen })
+      .then(function () { $('msg').textContent = 'Saved. Your agent follows these from its next purchase.'; return showMonth(); })
+      .catch(function (e) { $('msg').className = 'msg err'; $('msg').textContent = e.message; });
   };
-  show();
 })();

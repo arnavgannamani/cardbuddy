@@ -3,25 +3,62 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; connect-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; connect-src 'self'; img-src 'self'; style-src 'self'; font-src 'self'; base-uri 'none'; form-action 'none'">
   <title>Approvals · AgentPay</title>
+  <link rel="icon" href="/mark.svg">
   <link rel="stylesheet" href="/app.css">
 </head>
 <body>
-  <header><div class="in"><b>AgentPay</b><nav><a href="/">Wallet</a><a href="/approvals" aria-current="page">Approvals</a><a href="/receipts">Receipts</a><a href="/simulation">Simulation</a></nav></div></header>
+  <header class="top"><div class="in">
+    <a class="brand" href="/" aria-label="AgentPay by PointMaxx, wallet"><img src="/mark.svg" alt=""><b>AgentPay</b><span>by PointMaxx</span></a>
+    <nav aria-label="Main"><a href="/">Wallet</a><a href="/approvals" aria-current="page">Approvals <span class="count" id="pendingCount"></span></a><a href="/receipts">Receipts</a><a href="/simulation">Simulation</a></nav>
+    <div class="env"><i></i>PayPal sandbox</div>
+  </div></header>
+
   <main>
-    <h1>Waiting for you</h1>
-    <p class="sub">Purchases your agent tried that are outside your spending rules. Nothing is charged until you approve.</p>
-    <div id="list"></div>
-    <div class="panel">
-      <h2 style="margin:0 0 4px;font-size:18px">Your rules</h2>
-      <label for="per">Most an agent can spend on one purchase ($)</label><input type="number" id="per" min="1">
-      <label for="month">Monthly budget ($)</label><input type="number" id="month" min="1">
-      <label for="cats">Categories that always need approval (comma-separated)</label><input type="text" id="cats">
-      <p><button id="savePolicy">Save rules</button></p>
-      <p class="msg" id="msg" role="status"></p>
+    <div class="head"><div>
+      <h1>Waiting for you</h1>
+      <p class="sub">Purchases your agent tried that fall outside your rules. Nothing is charged until you approve, and then it pays with the card that earns the most.</p>
+    </div></div>
+
+    <div class="stack">
+      <section class="panel" aria-labelledby="heldH">
+        <div class="ph"><div><h2 id="heldH">Held purchases</h2></div><span class="meta" id="heldCount"></span></div>
+        <div id="list"><div class="held"><span class="skel w40"></span></div></div>
+        <p class="msg err pad" id="listMsg" role="status"></p>
+      </section>
+
+      <section class="panel" aria-labelledby="rulesH">
+        <div class="ph"><div><h2 id="rulesH">Your rules</h2><p>Your agent can't skip these. Anything outside them waits here.</p></div></div>
+        <div class="pb rules">
+          <div>
+            <div class="month">
+              <div class="month-h"><span>Spent this month</span><b class="num" id="spent">–</b></div>
+              <div class="meter" aria-hidden="true"><i id="meter"></i></div>
+              <small id="left"></small>
+            </div>
+            <label for="per">Most for one purchase</label>
+            <div class="money"><span>$</span><input type="number" id="per" min="1" inputmode="decimal"></div>
+            <label for="month">Monthly budget</label>
+            <div class="money"><span>$</span><input type="number" id="month" min="1" inputmode="decimal"></div>
+          </div>
+          <fieldset class="cats">
+            <legend>Always ask me first for</legend>
+            <div id="cats"></div>
+            <p class="save"><button id="savePolicy">Save rules</button></p>
+            <p class="msg" id="msg" role="status"></p>
+          </fieldset>
+        </div>
+      </section>
     </div>
   </main>
+
+  <footer class="foot">
+    <span><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>Held purchases are never sent to PayPal until you approve them.</span>
+    <span><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M5.5 8.2 7.2 10l3.3-3.6"/></svg>Rules are checked on AgentPay's server, before any card is charged.</span>
+    <span>Sandbox: no real money moves.</span>
+  </footer>
+  <script src="/shell.js"></script>
   <script src="/approvals.js"></script>
 </body>
 </html>

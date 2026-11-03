@@ -3,58 +3,66 @@
 (function () {
   'use strict';
   const $ = x => '$' + x.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const $0 = x => '$' + Math.round(x).toLocaleString('en-US');
+  const id = x => document.getElementById(x);
   const el = (tag, props, ...kids) => { const e = document.createElement(tag); Object.assign(e, props || {}); kids.forEach(k => e.append(k)); return e; };
-
-  function agent(title, line, earned, rate, extra, win) {
-    return el('div', { className: 'panel agent' + (win ? ' win' : '') },
-      el('h2', { textContent: title }), el('p', { className: 'note', textContent: line, style: 'margin:0 0 10px' }),
-      el('div', { className: 'big', textContent: $(earned) }), el('div', { className: 'muted', textContent: rate + '% back on the year' }),
-      el('p', { textContent: extra, style: 'margin:10px 0 0;font-weight:600' }));
-  }
+  const bar = (cls, w, title) => { const i = el('i', { className: cls, title }); i.style.width = w; return i; };
 
   function render(r) {
-    const h = r.headline, sr = r.spendingRules, def = r.assumptions.wallet.find(w => w.isDefault).card;
-    document.getElementById('sub').textContent = `${h.purchases} purchases, ${$(h.spend)}, made by an AI shopping agent with the same three cards: ` +
-      r.assumptions.wallet.map(w => w.card).join(', ') + `. Seed ${r.seed}, reproducible with node sim/simulate.mjs.`;
+    const h = r.headline, sr = r.spendingRules, wallet = r.assumptions.wallet, def = wallet.find(w => w.isDefault).card;
+    id('sub').textContent = `${h.purchases} purchases worth ${$0(h.spend)} over ${r.year}, made by one shopping agent holding ${wallet.length} cards: ` +
+      wallet.map(w => w.card).join(', ') + `. One run pays with the default card (${def}) every time; the other lets AgentPay choose and applies the spending rules.`;
 
-    document.getElementById('agents').append(
-      agent('Without AgentPay', `Every purchase on the default card (${def}). No spending rules.`, h.without, h.effWithout,
-        `${$(sr.wentOutWithoutHumanCheck.withoutAgentPay)} of mistakes went through`, false),
-      agent('With AgentPay', 'The best card per purchase, and the spending rules.', h.with, h.effWith,
-        `+${$(h.gap)} (+${h.gapPctOfWithout}%); ${$(sr.wentOutWithoutHumanCheck.withAgentPay)} of mistakes went through`, true));
+    id('gap').textContent = '+' + $(h.gap);
+    id('gapNote').textContent = `+${Math.round(h.gapPctOfWithout)}% over the default card`;
+    id('without').textContent = $(h.without);
+    id('withoutNote').textContent = `${h.effWithout.toFixed(2)}% back, all on ${def}`;
+    id('with').textContent = $(h.with);
+    id('withNote').textContent = `${h.effWith.toFixed(2)}% back, best card each time`;
+    id('mist').textContent = $(sr.wentOutWithoutHumanCheck.withAgentPay);
+    id('mistNote').textContent = `down from ${$(sr.wentOutWithoutHumanCheck.withoutAgentPay)} without rules`;
 
-    const max = Math.max(...r.byCategory.map(c => c.with));
-    const bars = document.getElementById('bars');
-    for (const c of [...r.byCategory].sort((a, b) => b.with - a.with)) {
-      const w = x => (x / max * 100).toFixed(1) + '%';
-      bars.append(el('div', { className: 'bar-row' },
-        el('div', { className: 'lab' }, el('span', { textContent: `${c.label} (${$(c.spend)})` }),
-          el('span', { className: 'muted', textContent: `${$(c.without)} → ${$(c.with)}` + (c.gap > 0 ? ` (+${$(c.gap)})` : ', default is already best') })),
-        el('div', { className: 'bar without', style: 'width:' + w(c.without), title: 'Default card ' + $(c.without) }),
-        el('div', { className: 'bar with', style: 'width:' + w(c.with), title: c.bestCards.join(', ') + ' ' + $(c.with) })));
-    }
+    const cats = [...r.byCategory].sort((a, b) => b.gap - a.gap || b.with - a.with);
+    const max = Math.max(...cats.map(c => c.with));
+    const w = x => (x / max * 100).toFixed(1) + '%';
+    id('catRows').replaceChildren(...cats.map(c => {
+      const wins = c.gap > 0.005;
+      return el('tr', {},
+        el('td', {}, el('b', { textContent: c.label }), el('br'), el('small', { textContent: `${c.purchases} purchases` })),
+        el('td', { className: 'r', textContent: $0(c.spend) }),
+        el('td', {}, wins ? document.createTextNode(c.bestCards.join(', ')) : el('span', { className: 'muted', textContent: 'Default card' })),
+        el('td', {}, el('div', { className: 'pair' }, bar('without', w(c.without), 'Default card ' + $(c.without)), bar('with', w(c.with), 'AgentPay ' + $(c.with)))),
+        el('td', { className: 'r muted', textContent: $(c.without) }),
+        el('td', { className: 'r' }, wins ? el('b', { className: 'extra', textContent: $(c.with) }) : document.createTextNode($(c.with))));
+    }));
 
     const p = sr.policy;
-    document.getElementById('policy').textContent = `Policy: $${p.perPurchase} per purchase, $${p.monthlyBudget.toLocaleString('en-US')} a month, ` +
-      `approval for ${p.approveCategories.join(', ')}. Without AgentPay all three go through.`;
-    const tb = document.getElementById('mistakes');
-    for (const m of sr.mistakes) {
+    id('policy').textContent = `The rules: up to $${p.perPurchase} a purchase, $${p.monthlyBudget.toLocaleString('en-US')} a month, and ${p.approveCategories.join(', ')} always asks first. Without AgentPay nothing checks the agent.`;
+    id('mistakes').replaceChildren(...sr.mistakes.map(m => {
       const held = m.withAgentPay === 'held for approval';
-      tb.append(el('tr', {},
-        el('td', {}, el('div', { textContent: m.label }), el('small', { className: 'muted', textContent: `${m.site}, ${m.date}` + (m.reasons.length ? '. ' + m.reasons.join('; ') : '') })),
+      return el('tr', {},
+        el('td', {}, el('b', { textContent: m.label }), el('br'), el('small', { textContent: `${m.site}, ${new Date(m.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` + (m.reasons.length ? '. Held because ' + m.reasons.join('; ') : '') })),
         el('td', { className: 'r', textContent: $(m.amount) }),
-        el('td', {}, el('span', { className: 'bad', textContent: 'Went through' })),
-        el('td', {}, el('span', { className: held ? 'ok' : 'bad', textContent: held ? 'Held for approval' : 'Went through' }))));
-    }
+        el('td', {}, el('span', { className: 'pill neg', textContent: 'Paid' })),
+        el('td', {}, el('span', { className: held ? 'pill pos' : 'pill neg', textContent: held ? 'Held for you' : 'Paid' })));
+    }));
     const lh = sr.legitimatePurchasesHeld;
-    document.getElementById('dupnote').textContent = 'The duplicate order is under the per-purchase limit, and the current rules don\'t look for duplicates, so it goes through. ' +
-      'Suggested rule: hold a purchase with the same merchant and amount as one in the last 24 hours (in this year it would catch the duplicate and hold nothing else). ' +
-      `The $${p.perPurchase} limit also holds ${lh.count} of ${lh.of} legitimate purchases for a tap.`;
-    document.getElementById('foot').textContent = `Amex Gold points valued at 1.5 cents (at 1.0 cent the gap is ${$(r.variants.goldAtOneCent.gap)}). ` +
-      `With a typical 1% default card the gap is ${$(r.variants.oneCentDefault.gap)}. Card rail only; paying through PayPal on a PayPal Cashback Mastercard would add ${$(r.variants.paypalRail.extraOverBestCard)}. Details: docs/SIMULATION.md.`;
+    id('dupnote').replaceChildren(el('b', { textContent: 'What gets past the rules: ' }),
+      `the duplicate order is under the $${p.perPurchase} limit and the rules don't look for repeats yet. A rule that holds the same merchant and amount within 24 hours would catch it and hold nothing else this year. ` +
+      `The $${p.perPurchase} limit also asks about ${lh.count} of ${lh.of} ordinary purchases.`);
+
+    const fact = (t, d) => el('div', {}, el('b', { textContent: t }), d);
+    id('facts').replaceChildren(
+      fact('Same cards both ways', 'Annual fees and card credits are equal in both runs, so they don\'t change the gap. Category caps are tracked across the year.'),
+      fact('Points at 1.5 cents', `Amex Gold points at the engine's 1.5 cents. At 1 cent the gap is ${$(r.variants.goldAtOneCent.gap)}; with a 1% default card it's ${$(r.variants.oneCentDefault.gap)}.`),
+      fact('Card rail only', `Paying through PayPal on a PayPal Cashback Mastercard would add ${$(r.variants.paypalRail.extraOverBestCard)}. Mistakes are left out of the rewards.`));
+    const e = r.estimate2030;
+    id('scale').replaceChildren(el('b', { textContent: 'At scale: ' }),
+      `if ${e.gapPctOfSpend}% of spend is left on the table, U.S. agent shopping in 2030 ($190B to $385B, Morgan Stanley) misses $${(e.low / 1e9).toFixed(1)}B to $${(e.high / 1e9).toFixed(1)}B in rewards a year. An illustration, not a forecast.`);
   }
 
-  fetch('simulation.json').then(res => { if (!res.ok) throw new Error(res.status); return res.json(); }).then(render).catch(() => {
-    document.getElementById('sub').textContent = 'Couldn\'t load simulation.json. Run node sim/simulate.mjs, then serve the web folder (the page needs http, not file://).';
+  fetch('/simulation.json').then(res => { if (!res.ok) throw new Error(res.status); return res.json(); }).then(render).catch(() => {
+    id('sub').textContent = 'Couldn\'t load simulation.json. Run node sim/simulate.mjs, then open this page from the AgentPay server.';
+    id('catRows').replaceChildren(el('tr', {}, el('td', { colSpan: 6, className: 'empty', textContent: 'No simulation results yet.' })));
   });
 })();

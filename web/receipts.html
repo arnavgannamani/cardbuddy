@@ -3,25 +3,51 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; connect-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; base-uri 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; connect-src 'self'; img-src 'self'; style-src 'self'; font-src 'self'; base-uri 'none'; form-action 'none'">
   <title>Receipts · AgentPay</title>
+  <link rel="icon" href="/mark.svg">
   <link rel="stylesheet" href="/app.css">
 </head>
 <body>
-  <header><div class="in"><b>AgentPay</b><nav><a href="/">Wallet</a><a href="/approvals">Approvals</a><a href="/receipts" aria-current="page">Receipts</a><a href="/simulation">Simulation</a></nav></div></header>
+  <header class="top"><div class="in">
+    <a class="brand" href="/" aria-label="AgentPay by PointMaxx, wallet"><img src="/mark.svg" alt=""><b>AgentPay</b><span>by PointMaxx</span></a>
+    <nav aria-label="Main"><a href="/">Wallet</a><a href="/approvals">Approvals <span class="count" id="pendingCount"></span></a><a href="/receipts" aria-current="page">Receipts</a><a href="/simulation">Simulation</a></nav>
+    <div class="env"><i></i>PayPal sandbox</div>
+  </div></header>
+
   <main>
-    <h1>What your agent earned you</h1>
-    <p class="sub">Every purchase your agent made, the card AgentPay picked, and what your default card would have earned.</p>
-    <div class="stats">
-      <div class="panel"><div class="muted">Rewards earned</div><div class="big" id="earned">$0.00</div></div>
-      <div class="panel"><div class="muted">With your default card</div><div class="big" id="def">$0.00</div></div>
-      <div class="panel"><div class="muted">Extra from the right card</div><div class="big" id="extra" style="color:var(--ok)">$0.00</div></div>
+    <div class="head"><div>
+      <h1>What your agent earned you</h1>
+      <p class="sub">Every purchase your agent paid for, the card AgentPay chose, and what your default card would have earned on it.</p>
+    </div></div>
+
+    <div class="stack">
+      <section class="panel bare" aria-label="Totals">
+        <div class="kpis">
+          <div class="kpi lead"><span>Extra from the right card</span><b id="extra">–</b><small id="extraNote">compared with your default card</small></div>
+          <div class="kpi"><span>Rewards earned</span><b id="earned">–</b><small id="rate"></small></div>
+          <div class="kpi"><span>Default card would have earned</span><b id="def">–</b><small id="defName"></small></div>
+          <div class="kpi"><span>Paid by your agent</span><b id="spent">–</b><small id="count"></small></div>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="listH">
+        <div class="ph"><div><h2 id="listH">Purchases</h2></div><span class="meta">Updates on its own</span></div>
+        <div class="scroll"><table>
+          <thead><tr><th>When</th><th>Purchase</th><th>Paid with</th><th class="r">Amount</th><th class="r">Earned</th><th class="r">Default</th></tr></thead>
+          <tbody id="rows"><tr><td colspan="6"><span class="skel w40"></span></td></tr></tbody>
+        </table></div>
+        <p class="callout">Rewards are estimates from each card's published terms, with points at PointMaxx's cents-per-point values, before any spending cap runs out.</p>
+      </section>
     </div>
-    <div class="panel" style="overflow-x:auto">
-      <table><thead><tr><th>When</th><th>Purchase</th><th>Card</th><th class="r">Amount</th><th class="r">Earned</th><th class="r">Default</th></tr></thead><tbody id="rows"></tbody></table>
-    </div>
-    <p class="note">Rewards are estimates from each card's published terms (points at PointMaxx's cents-per-point values), before spending caps run out. PayPal sandbox: no real money moves.</p>
   </main>
+
+  <footer class="foot">
+    <span><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>Each purchase is a PayPal order, charged to a vaulted card.</span>
+    <span><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M5.5 8.2 7.2 10l3.3-3.6"/></svg>If a card is declined, the next-best card pays and the receipt says so.</span>
+    <span>Sandbox: no real money moves.</span>
+  </footer>
+  <script src="/shell.js"></script>
   <script src="/receipts.js"></script>
 </body>
 </html>

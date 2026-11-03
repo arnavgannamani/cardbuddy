@@ -3,46 +3,65 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; connect-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; connect-src 'self'; img-src 'self'; style-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
   <title>Simulation · AgentPay</title>
-  <link rel="stylesheet" href="app.css">
-  <style>
-    .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .agent h2 { margin: 0 0 2px; font-size: 18px; }
-    .agent.win { border-color: var(--blue); }
-    .bars { display: grid; gap: 14px; }
-    .bar-row .lab { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 4px; }
-    .bar { height: 12px; border-radius: 6px; margin: 3px 0; min-width: 2px; }
-    .bar.without { background: #B9C3D6; }
-    .bar.with { background: var(--blue); }
-    .key { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin: 0 6px 0 14px; vertical-align: middle; }
-    .ok { color: var(--ok); font-weight: 600; } .bad { color: #BD0A0A; font-weight: 600; }
-    @media (max-width: 600px) { .two { grid-template-columns: 1fr; } }
-  </style>
+  <link rel="icon" href="/mark.svg">
+  <link rel="stylesheet" href="/app.css">
 </head>
 <body>
-  <header><div class="in"><b>AgentPay</b><nav><a href="/">Wallet</a><a href="/approvals">Approvals</a><a href="/receipts">Receipts</a><a href="/simulation" aria-current="page">Simulation</a></nav></div></header>
+  <header class="top"><div class="in">
+    <a class="brand" href="/" aria-label="AgentPay by PointMaxx, wallet"><img src="/mark.svg" alt=""><b>AgentPay</b><span>by PointMaxx</span></a>
+    <nav aria-label="Main"><a href="/">Wallet</a><a href="/approvals">Approvals <span class="count" id="pendingCount"></span></a><a href="/receipts">Receipts</a><a href="/simulation" aria-current="page">Simulation</a></nav>
+    <div class="env"><i></i>PayPal sandbox</div>
+  </div></header>
+
   <main>
-    <h1>A year of agent purchases</h1>
-    <p class="sub" id="sub">Loading the simulation…</p>
+    <div class="head"><div>
+      <h1>A year of agent purchases, with and without AgentPay</h1>
+      <p class="sub" id="sub">The same shopping agent, the same cards and the same purchases. One pays with the default card every time; the other uses AgentPay.</p>
+    </div></div>
 
-    <div class="two" id="agents"></div>
+    <div class="stack">
+      <section class="panel bare" aria-label="Headline">
+        <div class="kpis">
+          <div class="kpi lead"><span>More rewards with AgentPay</span><b id="gap">–</b><small id="gapNote"></small></div>
+          <div class="kpi"><span>Without AgentPay</span><b id="without">–</b><small id="withoutNote"></small></div>
+          <div class="kpi"><span>With AgentPay</span><b id="with">–</b><small id="withNote"></small></div>
+          <div class="kpi"><span>Agent mistakes that got paid</span><b id="mist">–</b><small id="mistNote"></small></div>
+        </div>
+      </section>
 
-    <div class="panel">
-      <h2 style="margin:0 0 4px;font-size:18px">Rewards by category</h2>
-      <p class="note"><span class="key" style="background:#B9C3D6;margin-left:0"></span>Default card<span class="key" style="background:var(--blue)"></span>AgentPay's pick</p>
-      <div class="bars" id="bars"></div>
+      <section class="panel" aria-labelledby="catH">
+        <div class="ph"><div><h2 id="catH">Rewards by category</h2><p>Where the extra comes from. Where the bars match, the default card was already the best.</p></div>
+          <div class="legend2" aria-hidden="true"><span><i></i>Default card</span><span><i class="with"></i>AgentPay's pick</span></div></div>
+        <div class="scroll"><table class="cmp">
+          <thead><tr><th>Category</th><th class="r">Spend</th><th>AgentPay pays with</th><th>Rewards</th><th class="r">Default</th><th class="r">AgentPay</th></tr></thead>
+          <tbody id="catRows"><tr><td colspan="6"><span class="skel w40"></span></td></tr></tbody>
+        </table></div>
+      </section>
+
+      <section class="panel" aria-labelledby="mistH">
+        <div class="ph"><div><h2 id="mistH">Three mistakes the agent made</h2><p id="policy"></p></div></div>
+        <div class="scroll"><table>
+          <thead><tr><th>What happened</th><th class="r">Amount</th><th>Without AgentPay</th><th>With AgentPay</th></tr></thead>
+          <tbody id="mistakes"></tbody>
+        </table></div>
+        <p class="callout" id="dupnote"></p>
+      </section>
+
+      <section class="panel" aria-labelledby="howH">
+        <div class="ph"><div><h2 id="howH">How this was worked out</h2><p>Reproducible with node sim/simulate.mjs. The full method is in docs/SIMULATION.md.</p></div></div>
+        <div class="facts" id="facts"></div>
+        <p class="callout" id="scale"></p>
+      </section>
     </div>
-
-    <div class="panel">
-      <h2 style="margin:0 0 4px;font-size:18px">The agent's three mistakes</h2>
-      <p class="note" id="policy"></p>
-      <table><thead><tr><th>Mistake</th><th class="r">Amount</th><th>Without AgentPay</th><th>With AgentPay</th></tr></thead><tbody id="mistakes"></tbody></table>
-      <p class="warn" id="dupnote" style="margin-top:14px"></p>
-    </div>
-
-    <p class="note" id="foot"></p>
   </main>
-  <script src="simulation.js"></script>
+
+  <footer class="foot">
+    <span><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M5.5 8.2 7.2 10l3.3-3.6"/></svg>Card picks by the same PointMaxx engine AgentPay pays with.</span>
+    <span>Simulated purchases: no PayPal orders were made for this page.</span>
+  </footer>
+  <script src="/shell.js"></script>
+  <script src="/simulation.js"></script>
 </body>
 </html>

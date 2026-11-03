@@ -5,35 +5,87 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <!-- Card numbers go from PayPal's card fields (their iframes) straight to PayPal. This page and the AgentPay server
        only ever see the vault token PayPal returns. -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-xiaD0XEAtT7Da8WrcQjkQbhOx0ZR6pjMSRZNsqZuFdA=' https://www.paypal.com https://*.paypal.com https://*.paypalobjects.com; connect-src 'self' https://*.paypal.com; frame-src https://*.paypal.com; img-src 'self' data: https://*.paypal.com https://*.paypalobjects.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; object-src 'none'; base-uri 'none'; form-action 'none'">
-  <title>Your wallet · AgentPay</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-xiaD0XEAtT7Da8WrcQjkQbhOx0ZR6pjMSRZNsqZuFdA=' https://www.paypal.com https://*.paypal.com https://*.paypalobjects.com; connect-src 'self' https://*.paypal.com; frame-src https://*.paypal.com; img-src 'self' data: https://*.paypal.com https://*.paypalobjects.com; style-src 'self' 'unsafe-inline'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Wallet · AgentPay</title>
+  <link rel="icon" href="/mark.svg">
   <link rel="stylesheet" href="/app.css">
+  <style>
+    .cardrow { display: grid; grid-template-columns: 46px minmax(0, 1fr) auto; gap: 16px; align-items: center; padding: 18px 24px; border-bottom: 1px solid var(--rule); }
+    .cardrow:last-child { border-bottom: 0; }
+    .cardrow b { display: block; font-weight: 600; }
+    .cardrow small { color: var(--muted); font-size: 13px; }
+    .cardrow .acts { display: flex; align-items: center; gap: 4px; }
+    .rate { display: flex; align-items: center; gap: 10px; justify-content: flex-end; }
+    .track { width: 112px; height: 6px; border-radius: 3px; background: var(--rule); position: relative; flex: none; }
+    .track i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; background: var(--data); }
+    .track.flat i { background: var(--faint); }
+    .track u { position: absolute; top: -3px; width: 2px; height: 12px; background: var(--text); border-radius: 1px; }
+    .legend { display: flex; gap: 16px; font-size: 12.5px; color: var(--muted); }
+    .legend span { display: flex; align-items: center; gap: 6px; }
+    .legend i { width: 14px; height: 6px; border-radius: 3px; background: var(--data); }
+    .legend u { width: 2px; height: 12px; background: var(--text); }
+    .same { color: var(--muted); }
+    @media (min-width: 901px) { .sticky { position: sticky; top: 20px; } }
+    .gain { font-weight: 600; }
+    @media (max-width: 640px) { .track { display: none; } .hide-s { display: none; } .cardrow { grid-template-columns: 46px minmax(0, 1fr); padding: 16px; } .cardrow .acts { grid-column: 2; margin: -4px 0 0 -8px; flex-wrap: wrap; } .legend { display: none; } }
+  </style>
 </head>
 <body>
-  <header><div class="in"><b>AgentPay</b><nav><a href="/" aria-current="page">Wallet</a><a href="/approvals">Approvals</a><a href="/receipts">Receipts</a><a href="/simulation">Simulation</a></nav></div></header>
+  <header class="top"><div class="in">
+    <a class="brand" href="/" aria-label="AgentPay by PointMaxx, wallet"><img src="/mark.svg" alt=""><b>AgentPay</b><span>by PointMaxx</span></a>
+    <nav aria-label="Main"><a href="/" aria-current="page">Wallet</a><a href="/approvals">Approvals <span class="count" id="pendingCount"></span></a><a href="/receipts">Receipts</a><a href="/simulation">Simulation</a></nav>
+    <div class="env"><i></i>PayPal sandbox</div>
+  </div></header>
+
   <main>
-    <h1>Your wallet</h1>
-    <p class="sub">Add the cards your agent can pay with. They're saved in PayPal's vault; AgentPay never sees the card number.</p>
+    <div class="head"><div>
+      <h1>Your agent's wallet</h1>
+      <p class="sub">The cards your agent is allowed to pay with. On every purchase AgentPay picks the one that earns the most, then pays through PayPal.</p>
+    </div></div>
 
-    <div class="panel">
-      <h2 style="margin:0 0 4px;font-size:18px">Cards</h2>
-      <div class="cards" id="wallet"><p class="muted">No cards yet.</p></div>
-    </div>
+    <div class="grid">
+      <div class="stack">
+        <section class="panel" aria-labelledby="cardsH">
+          <div class="ph"><div><h2 id="cardsH">Cards</h2><p>Saved in PayPal's vault. Your default is the card you'd use without AgentPay.</p></div><span class="meta" id="cardCount"></span></div>
+          <div id="wallet"><div class="cardrow"><span></span><span class="skel" style="width:60%"></span><span></span></div></div>
+        </section>
 
-    <div class="panel">
-      <h2 style="margin:0 0 4px;font-size:18px">Add a card</h2>
-      <p class="note">PayPal sandbox: use a test card from your developer dashboard (Testing Tools, Card Testing). Never a real card.</p>
-      <label for="which">Which card is this?</label>
-      <select id="which"></select>
-      <label>Name on card</label><div id="name" class="field"></div>
-      <label>Card number</label><div id="number" class="field"></div>
-      <label>Expiry</label><div id="expiry" class="field"></div>
-      <label>Security code</label><div id="cvv" class="field"></div>
-      <label style="font-weight:400"><input type="checkbox" id="makeDefault"> Make this my default card (what I'd use without AgentPay)</label>
-      <p><button id="save" disabled>Save card to PayPal</button></p>
-      <p class="msg" id="msg" role="status"></p>
+        <section class="panel" aria-labelledby="routesH">
+          <div class="ph"><div><h2 id="routesH">Where each card wins</h2><p>What your agent pays with in each category, against your default card.</p></div>
+            <div class="legend" aria-hidden="true"><span><i></i>AgentPay's pick</span><span><u></u>Default</span></div></div>
+          <div class="scroll"><table>
+            <thead><tr><th>Category</th><th>Pays with</th><th class="r">Back</th><th class="r hide-s">On $100</th></tr></thead>
+            <tbody id="routes"><tr><td colspan="4"><span class="skel" style="width:40%"></span></td></tr></tbody>
+          </table></div>
+        </section>
+      </div>
+
+      <section class="panel sticky" aria-labelledby="addH">
+        <div class="ph"><div><h2 id="addH">Add a card</h2><p>The number goes to PayPal, not to AgentPay.</p></div></div>
+        <div class="pb">
+          <p class="hint">Sandbox: use a test card from your PayPal developer dashboard (Testing tools, Card testing). Never a real card.</p>
+          <label for="which">Which card is this?</label>
+          <select id="which"><option value="">Loading cards…</option></select>
+          <label>Name on card</label><div id="name" class="field"></div>
+          <label>Card number</label><div id="number" class="field"></div>
+          <div class="row2">
+            <div><label>Expiry</label><div id="expiry" class="field"></div></div>
+            <div><label>Security code</label><div id="cvv" class="field"></div></div>
+          </div>
+          <label class="check"><input type="checkbox" id="makeDefault"> Make this my default card (what I'd pay with without AgentPay)</label>
+          <p style="margin:18px 0 0"><button id="save" disabled style="width:100%">Save card to PayPal</button></p>
+          <p class="msg" id="msg" role="status"></p>
+        </div>
+      </section>
     </div>
   </main>
+
+  <footer class="foot">
+    <span><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>Card numbers go from PayPal's fields straight to PayPal's vault. AgentPay keeps only the vault token.</span>
+    <span><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M5.5 8.2 7.2 10l3.3-3.6"/></svg>Rates from each card's published terms, ranked by the PointMaxx engine.</span>
+    <span>Sandbox: no real money moves.</span>
+  </footer>
+  <script src="/shell.js"></script>
   <script src="/connect.js"></script>
 </body>
 </html>

@@ -9,14 +9,51 @@
   }
   function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 
+  var FACES = ['#0a2366', '#1a5fdb', '#0c1322', '#3b5a99', '#5d6879']; // PointMaxx navy, blue and ink: drawn cards, never issuer art
+  function brand(b) { b = String(b || 'Card').toLowerCase(); return b.charAt(0).toUpperCase() + b.slice(1); }
+
+  // For each category, the card AgentPay would pay a $100 purchase with, from the same engine the agent uses.
+  function routes(categories) {
+    return Promise.all(categories.map(function (cat) {
+      return api('/api/recommend', { amount: 100, merchant: cat, category: cat }).catch(function () { return null; });
+    })).then(function (list) { return list.filter(Boolean); });
+  }
+
+  function showRoutes(list) {
+    var max = Math.max.apply(null, list.map(function (r) { return r.best.percentBack; }).concat([1]));
+    var pct = function (x) { return (x / max * 100).toFixed(1) + '%'; };
+    list = list.slice().sort(function (a, b) { return (b.best.percentBack - b.defaultCard.percentBack) - (a.best.percentBack - a.defaultCard.percentBack); });
+    $('routes').innerHTML = list.map(function (r) {
+      var gain = r.best.percentBack - r.defaultCard.percentBack;
+      return '<tr><td>' + esc(r.categoryLabel) + '</td><td>' + (gain > 0 ? '<b>' + esc(r.best.card) + '</b>' : '<span class="same">' + esc(r.best.card) + '</span>') +
+        (r.best.rail !== 'card' ? ' <small>via ' + (r.best.rail === 'paypal' ? 'PayPal' : 'Venmo') + '</small>' : '') + '</td>' +
+        '<td class="r"><span class="rate"><span class="num">' + r.best.percentBack + '%</span><span class="track' + (gain > 0 ? '' : ' flat') + '" aria-hidden="true"><i style="width:' + pct(r.best.percentBack) + '"></i><u style="left:calc(' + pct(r.defaultCard.percentBack) + ' - 1px)"></u></span></span></td>' +
+        '<td class="r hide-s">' + (gain > 0 ? '<span class="gain">+$' + gain.toFixed(2) + '</span>' : '<span class="same">same</span>') + '</td></tr>';
+    }).join('');
+  }
+
   function showWallet() {
     api('/api/wallet').then(function (w) {
-      $('wallet').innerHTML = w.length ? w.map(function (c) {
-        return '<div class="card"><span><b>' + esc(c.card) + '</b><br><small>' + esc((c.brand || 'Card') + ' ending ' + (c.last4 || '????')) + '</small></span><span>' +
-          (c.isDefault ? '<span class="tag">Default</span> ' : '<button class="ghost" data-default="' + esc(c.vaultId) + '">Make default</button> ') +
-          '<button class="ghost" data-remove="' + esc(c.vaultId) + '" data-name="' + esc(c.card) + '">Remove</button></span></div>';
-      }).join('') : '<p class="muted">No cards yet.</p>';
-    });
+      $('cardCount').textContent = w.length ? w.length + (w.length === 1 ? ' card' : ' cards') : '';
+      if (!w.length) {
+        $('wallet').innerHTML = '<div class="pb"><p class="note">No cards yet. Add the cards you already carry; your agent can only pay with cards on this list.</p></div>';
+        $('routes').innerHTML = '<tr><td colspan="4" class="empty">Add a card to see where it wins.</td></tr>';
+        return;
+      }
+      api('/api/config').then(function (cfg) { return routes(cfg.categories || []); }).then(function (list) {
+        var wins = {};
+        list.forEach(function (r) { if (r.best.percentBack > r.defaultCard.percentBack) wins[r.best.cardId] = (wins[r.best.cardId] || 0) + 1; });
+        $('wallet').innerHTML = w.map(function (c, i) {
+          var n = wins[c.cardId] || 0;
+          var role = c.isDefault ? 'pays wherever no card beats it' : n ? 'beats your default in ' + n + (n === 1 ? ' category' : ' categories') : 'never beats your default';
+          return '<div class="cardrow"><span class="face" data-net="' + esc({ MASTERCARD: 'MC', VISA: 'VISA', AMEX: 'AMEX', DISCOVER: 'DISC' }[String(c.brand).toUpperCase()] || '') + '" style="--face:' + FACES[i % FACES.length] + '" aria-hidden="true"></span><span><b>' + esc(c.card) + '</b><small>' +
+            esc(brand(c.brand) + ' ending ' + (c.last4 || '????') + ' · ' + role) + '</small></span><span class="acts">' +
+            (c.isDefault ? '<span class="pill">Default</span>' : '<button class="link" data-default="' + esc(c.vaultId) + '">Make default</button>') +
+            '<button class="link" data-remove="' + esc(c.vaultId) + '" data-name="' + esc(c.card) + '">Remove</button></span></div>';
+        }).join('');
+        showRoutes(list);
+      });
+    }).catch(function (e) { say(e.message, true); });
   }
   $('wallet').addEventListener('click', function (e) {
     var rm = e.target.getAttribute('data-remove'), def = e.target.getAttribute('data-default');
@@ -29,7 +66,7 @@
   });
 
   api('/api/cards').then(function (cards) {
-    $('which').innerHTML = '<option value="">Choose…</option>' + cards.sort(function (a, b) { return a.name.localeCompare(b.name); })
+    $('which').innerHTML = '<option value="">Choose the card…</option>' + cards.sort(function (a, b) { return a.name.localeCompare(b.name); })
       .map(function (c) { return '<option value="' + esc(c.id) + '">' + esc(c.name) + '</option>'; }).join('');
   });
   showWallet();
