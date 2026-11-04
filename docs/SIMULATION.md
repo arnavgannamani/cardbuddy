@@ -9,8 +9,8 @@ purchase, is in [`sim/results.json`](../sim/results.json).
   $875.54 vs $424.55 on $21,227.56 of agent spending, against a 2%-everywhere default.
 - **If your default card is a typical 1% card, the gap is $621.88 (+293%).**
 - **Groceries and food delivery are most of the gain:** $238.16 + $153.21 = $391.37 of the $450.99 (86.8%).
-- **The agent's three mistakes would have spent $1,957.12 with no human check. AgentPay held $1,861 of it** (the $1,249
-  TV and the $612 wrong-date flight). The $96.12 duplicate order still went through: see below.
+- **The agent's three mistakes would have spent $1,957.12 with no human check. AgentPay held all of it:** the $1,249 TV,
+  the $612 wrong-date flight, and the $96.12 duplicate grocery order (same store and amount within 24 hours).
 - **Add the PayPal Cashback Mastercard and pay through PayPal on 86 of 329 purchases: another $82.77.**
 
 ## Setup
@@ -102,21 +102,21 @@ every legitimate purchase that's held and declines the mistakes.
 
 | Mistake (scripted) | Amount | Without AgentPay | With AgentPay | Why |
 |---|---:|---|---|---|
-| (a) Same wholefoodsmarket.com order placed twice on Jan 4 | $96.12 | Went through | **Went through** | Under the $100 limit; the current rules don't look for duplicates |
+| (a) Same wholefoodsmarket.com order placed twice on Jan 4 | $96.12 | Went through | **Held for approval** | Same store and amount as a purchase paid in the last 24 hours |
 | (b) $1,249 TV ordered when asked for a "$150 TV mount" (bestbuy.com, Sep 14) | $1,249.00 | Went through | **Held for approval** | Over the $100 per-purchase limit |
 | (c) $612 flight booked on the wrong date (delta.com, May 20) | $612.00 | Went through | **Held for approval** | Over the per-purchase limit; travel always needs approval |
 
-- **Money that went out with no human check:** $1,957.12 without AgentPay; **$96.12 with AgentPay**.
-- **The duplicate is not caught, and we shouldn't claim it is.** The current rules only look at size, budget and
-  category. 9 of the 48 grocery orders are under $100, and a duplicate of any of them would go straight through; a
-  duplicate of a bigger order would be held, but only for its size, so the person sees two similar approval requests.
-  **Suggested fix: hold a purchase with the same merchant and the same amount as one paid in the last 24 hours.**
-  Simulated (not in AgentPay yet), it holds the duplicate and holds no legitimate purchase in this year.
+- **Money that went out with no human check:** $1,957.12 without AgentPay; **$0 with AgentPay**.
+- **Two store rules catch repeats and splits.** A purchase is held if the same amount was paid at the same store in the
+  last 24 hours (that's what catches the duplicate), or if purchases at one store within an hour add up past the
+  per-purchase limit (what stops an agent splitting a $300 order into three $100 ones).
 - **Being held is not the same as being caught.** For (b) and (c) the policy stops the payment and asks; the person still
   has to notice the wrong item or date in the approval request.
-- **The cost of a $100 limit: 68 of 329 legitimate purchases (20.7%, $11,380.71) also wait for approval**, about 1.3 a
-  week: 39 grocery orders, 24 online orders and the 5 trips. At a $200 limit that drops to 13, and the TV and flight
-  are still held. The $2,500 budget never trips in this year; it's a backstop.
+- **The cost of the rules: 70 of 329 legitimate purchases (21.3%, $11,473.13) also wait for approval**, about 1.3 a
+  week: 39 grocery orders, 24 online orders, the 5 trips, and 2 same-day Amazon orders that add up past $100 (the
+  simulation stamps every purchase at noon, so same-day orders count as within the hour; real ones are rarer). At a
+  $200 limit that drops to 13, and all three mistakes are still held. The $2,500 budget never trips in this year; it's
+  a backstop.
 
 ## Why this matters
 

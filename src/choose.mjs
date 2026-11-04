@@ -25,17 +25,23 @@ export function cardName(id) { const c = E.HOLDABLE.find(x => x.id === id); retu
 
 // Where the purchase happens: a known store's name and category (engine/stores.json), or a merchant name plus the
 // category the caller gives. A known store's category can't be overridden: calling delta.com "dining" would skip an
-// always-ask rule on travel. For an unknown merchant the category is the agent's word.
+// always-ask rule on travel. For an unknown merchant the category is the agent's word, so the engine also reads the
+// name itself (guess), and the rules check both: calling Spirit Airlines "other" doesn't skip the travel rule either.
 export function storeFor({ merchant, site, category } = {}) {
+  let host = null;
   if (site != null) {
     if (typeof site !== 'string' || site.length > 200) throw new Bad('site must be a website of up to 200 characters.');
-    const host = site.trim().toLowerCase().replace(/^https?:\/\//, '').split(/[/?#]/)[0];
+    host = site.trim().toLowerCase().replace(/^https?:\/\//, '').split(/[/?#]/)[0];
     const key = globalThis.PointMaxxStore(STORES, host);
-    if (key) return { name: STORES[key][0], cat: STORES[key][1], site: key, warn: STORES[key][2] || null };
+    if (key) return { name: STORES[key][0], cat: STORES[key][1], site: key, warn: STORES[key][2] || null, guess: null };
+    if (merchant == null) merchant = host; // a site AgentPay doesn't know: its address stands in for the store's name
   }
-  if (!CATEGORIES.includes(category)) throw new Bad('Give a known site, or a category: ' + CATEGORIES.join(', ') + '.');
+  if (!CATEGORIES.includes(category)) throw new Bad((host ? `AgentPay doesn't know ${host}. ` : '') + 'Give a known site, or a category: ' + CATEGORIES.join(', ') + '.');
   if (typeof merchant !== 'string' || !merchant.trim() || merchant.length > 100) throw new Bad('merchant must be a name of up to 100 characters.');
-  return { name: merchant.trim().toUpperCase(), cat: category, site: null, warn: null };
+  const name = merchant.trim().toUpperCase(), info = E.categoryInfo({ desc: name, key: E.merchantKey(name) });
+  // Only a sure reading counts: a keyword rule, or the name model at its confidence threshold.
+  const guess = (info.source === 'rule' || info.source === 'model') && info.cat !== category ? info.cat : null;
+  return { name, cat: category, site: null, warn: null, guess };
 }
 
 // wallet: [{ vaultId, cardId, ... }]. Returns every (rail, card) option sorted by percent back, the best card-rail
@@ -57,7 +63,7 @@ export function choose(wallet, purchase, date = new Date()) {
   const defaultEntry = wallet.find(w => w.isDefault) || wallet[0];
   const asDefault = onCard.find(o => o.cardId === defaultEntry.cardId);
   return {
-    category: store.cat, categoryLabel: E.CAT_LABEL[store.cat], store: store.name, site: store.site, warning: store.warn,
+    category: store.cat, categoryLabel: E.CAT_LABEL[store.cat], store: store.name, site: store.site, warning: store.warn, guessedCategory: store.guess,
     best: { ...best, vaultId: wallet.find(w => w.cardId === best.cardId).vaultId },
     defaultCard: { card: asDefault.card, percentBack: asDefault.percentBack },
     // Another rail beats the best card, say paying with PayPal on the PayPal Cashback Mastercard: worth telling.

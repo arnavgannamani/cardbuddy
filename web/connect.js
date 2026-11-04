@@ -78,23 +78,32 @@
     s.src = 'https://www.paypal.com/sdk/js?client-id=' + encodeURIComponent(cfg.clientId) + '&components=card-fields';
     s.onerror = function () { say('PayPal didn\'t load. Check your connection.', true); };
     s.onload = function () {
+      var serverError = null; // AgentPay's own error (say, the PayPal app's permissions), not a problem with the card
       var fields = window.paypal.CardFields({
-        createVaultSetupToken: function () { return api('/api/vault/setup-token', {}).then(function (t) { return t.id; }); },
+        createVaultSetupToken: function () {
+          serverError = null;
+          return api('/api/vault/setup-token', {}).then(function (t) { return t.id; }, function (e) { serverError = e.message; throw e; });
+        },
         onApprove: function (data) {
           say('Saving…');
           return api('/api/vault/payment-token', { setupTokenId: data.vaultSetupToken, cardId: $('which').value, makeDefault: $('makeDefault').checked })
-            .then(function (c) { say('Saved: ' + c.card + ' ending ' + (c.last4 || '????') + '.'); showWallet(); })
+            .then(function (c) {
+              say('Saved: ' + c.card + ' ending ' + (c.last4 || '????') + '.');
+              parts.forEach(function (f) { if (f.clear) f.clear(); }); $('which').value = ''; $('makeDefault').checked = false; // ready for the next card
+              showWallet();
+            })
             .catch(function (e) { say(e.message, true); });
         },
         onError: function (e) { say('PayPal couldn\'t save the card: ' + (e && e.message || e), true); }
       });
       if (!fields.isEligible()) return say('Card fields aren\'t available for this PayPal app. Turn on Advanced Credit and Debit Card Payments in the sandbox app.', true);
-      fields.NameField().render('#name'); fields.NumberField().render('#number'); fields.ExpiryField().render('#expiry'); fields.CVVField().render('#cvv');
+      var parts = [fields.NameField(), fields.NumberField(), fields.ExpiryField(), fields.CVVField()];
+      ['#name', '#number', '#expiry', '#cvv'].forEach(function (sel, i) { parts[i].render(sel); });
       $('save').disabled = false;
       $('save').onclick = function () {
         if (!$('which').value) return say('Choose which card this is first.', true);
         say('Sending the card to PayPal…');
-        fields.submit().catch(function (e) { say('Check the card details: ' + (e && e.message || e), true); });
+        fields.submit().catch(function (e) { say(serverError || 'Check the card details: ' + (e && e.message || e), true); });
       };
     };
     document.head.appendChild(s);

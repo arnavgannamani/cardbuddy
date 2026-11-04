@@ -169,26 +169,21 @@ const avgMonth = r2(monthly.reduce((a, b) => a + b, 0) / 12);
 const MONTHLY_BUDGET = 2500;
 const POLICY = { perPurchase: 100, monthlyBudget: MONTHLY_BUDGET, approveCategories: ['travel'] };
 
-function runPolicy(policy, { duplicateRule = false } = {}) {
+function runPolicy(policy) {
   const events = [...purchases.map(p => ({ ...p, mistake: null })), ...MISTAKES.map(m => ({ ...m, what: m.label, mistake: m.key }))].sort((a, b) => a.date - b.date);
   const receipts = [], log = [];
   for (const e of events) {
     const c = choose(W3, { site: e.site, amount: e.amount }, e.date);
-    const res = check(policy, receipts, { amount: e.amount, category: c.category }, e.date);
-    const reasons = [...res.reasons];
-    if (duplicateRule) { // suggested rule, NOT in src/policy.mjs: same merchant + same amount within 24 hours
-      const dup = receipts.find(r => r.site === e.site && r.amount === e.amount && Math.abs(new Date(r.at) - e.date) < 864e5);
-      if (dup) reasons.push(`same merchant and amount as a purchase ${Math.round(Math.abs(e.date - new Date(dup.at)) / 36e5)}h earlier`);
-    }
+    const reasons = check(policy, receipts, { amount: e.amount, category: c.category, store: c.store }, e.date).reasons;
     const held = reasons.length > 0;
     // The person approves every legitimate purchase that was held and declines the agent's mistakes.
     const paid = !held || !e.mistake;
-    if (paid) receipts.push({ status: 'paid', at: e.date.toISOString(), amount: e.amount, site: e.site });
+    if (paid) receipts.push({ status: 'paid', at: e.date.toISOString(), amount: e.amount, site: e.site, merchant: c.store });
     log.push({ date: e.date.toISOString().slice(0, 10), site: e.site, category: c.category, amount: e.amount, mistake: e.mistake, held, reasons });
   }
   const legitHeld = log.filter(l => !l.mistake && l.held);
   const reasonCount = {};
-  for (const l of legitHeld) for (const r of l.reasons) { const k = /per-purchase/.test(r) ? 'per-purchase limit' : /budget/.test(r) ? 'monthly budget' : /always need/.test(r) ? 'travel category' : 'duplicate rule'; reasonCount[k] = (reasonCount[k] || 0) + 1; }
+  for (const l of legitHeld) for (const r of l.reasons) { const k = /last hour/.test(r) ? 'split at the same store' : /per-purchase/.test(r) ? 'per-purchase limit' : /budget/.test(r) ? 'monthly budget' : /always need/.test(r) ? 'travel category' : 'repeat at the same store'; reasonCount[k] = (reasonCount[k] || 0) + 1; }
   return {
     mistakes: MISTAKES.map(m => { const l = log.find(x => x.mistake === m.key); return { key: m.key, label: m.label, story: m.story, date: l.date, site: m.site, amount: m.amount, category: l.category, withoutAgentPay: 'went through', withAgentPay: l.held ? 'held for approval' : 'went through', reasons: l.reasons }; }),
     legitHeld: legitHeld.length, legitHeldSpend: r2(legitHeld.reduce((s, l) => s + l.amount, 0)), legitHeldByReason: reasonCount,
@@ -196,7 +191,6 @@ function runPolicy(policy, { duplicateRule = false } = {}) {
   };
 }
 const policyRun = runPolicy(POLICY);
-const policyWithDupRule = runPolicy(POLICY, { duplicateRule: true });
 const policy200 = runPolicy({ ...POLICY, perPurchase: 200 });
 const mistakeTotal = r2(MISTAKES.reduce((s, m) => s + m.amount, 0));
 const slipped = policyRun.mistakes.filter(m => m.withAgentPay === 'went through');
@@ -233,7 +227,6 @@ const results = {
     wentOutWithoutHumanCheck: { withoutAgentPay: mistakeTotal, withAgentPay: r2(slipped.reduce((s, m) => s + m.amount, 0)) },
     legitimatePurchasesHeld: { count: policyRun.legitHeld, of: purchases.length, spend: policyRun.legitHeldSpend, byReason: policyRun.legitHeldByReason, byCategory: policyRun.legitHeldByCategory },
     groceryOrdersUnderLimit: { count: groceryUnder100, of: groceryCount }, purchasesUnderLimit: { count: legitSmall, of: purchases.length },
-    suggestedDuplicateRule: { rule: 'Hold a purchase with the same merchant and the same amount as a paid purchase in the last 24 hours (not in AgentPay yet; simulated here)', mistakes: policyWithDupRule.mistakes.map(m => ({ key: m.key, withAgentPay: m.withAgentPay, reasons: m.reasons })), extraLegitHeld: policyWithDupRule.legitHeld - policyRun.legitHeld },
     perPurchase200: { label: 'Sensitivity: per-purchase limit $200', mistakes: policy200.mistakes.map(m => ({ key: m.key, withAgentPay: m.withAgentPay })), legitHeld: policy200.legitHeld }
   },
   estimate2030: { ...estimate, basis: "Morgan Stanley's $190B-$385B U.S. agentic e-commerce by 2030 x the simulated gap as % of spend. Illustration, not a forecast." },
@@ -258,7 +251,6 @@ const g = goldAtOneCent.totals; console.log(`Gold at 1.0c: with ${$(g.with)}, ga
 console.log(`PayPal rail (4 cards): ${railRows.length} purchases, +${$(railExtra)} over best card; 3-card wallet other-rail wins: ${threeCardRail}`, Object.values(railByCat));
 console.log('Mistakes:', policyRun.mistakes.map(m => `${m.key} ${$(m.amount)}: ${m.withAgentPay}${m.reasons.length ? ' (' + m.reasons.join('; ') + ')' : ''}`).join(' | '));
 console.log(`Legit purchases held: ${policyRun.legitHeld} of ${purchases.length} (${$(policyRun.legitHeldSpend)})`, policyRun.legitHeldByReason, policyRun.legitHeldByCategory);
-console.log('With duplicate rule:', policyWithDupRule.mistakes.map(m => `${m.key}: ${m.withAgentPay}`).join(', '), `extra legit held ${policyWithDupRule.legitHeld - policyRun.legitHeld}`);
 console.log(`perPurchase 200: legit held ${policy200.legitHeld}`, policy200.mistakes.map(m => `${m.key}: ${m.withAgentPay}`).join(', '));
 console.log(`2030: ${pct.toFixed(4)}% x $190B = ${$(estimate.low)}; x $385B = ${$(estimate.high)}`);
 console.log('Wrote sim/results.json and web/simulation.json');

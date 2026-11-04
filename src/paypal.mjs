@@ -23,6 +23,10 @@ async function api(method, path, body) {
     headers: { Authorization: 'Bearer ' + await accessToken(), 'Content-Type': 'application/json', 'PayPal-Request-Id': randomUUID() } });
   const out = r.status === 204 ? {} : await r.json().catch(() => ({}));
   if (!r.ok) {
+    // The token carries the app's permissions as they were when it was issued: drop it so a fix on
+    // developer.paypal.com takes effect on the next request, without restarting AgentPay.
+    if (r.status === 401 || r.status === 403) token = null;
+    if (r.status === 403) throw new Bad('PayPal says this sandbox app isn\'t allowed to do that (HTTP 403 NOT_AUTHORIZED). In the app\'s Features on developer.paypal.com, turn on Save payment methods and Advanced Credit and Debit Card Payments and save. If they\'re already on, create a new US sandbox business account and a new Merchant app on it, and put its keys in .env (see the README).');
     const detail = (out.details || []).map(d => d.issue + (d.description ? ': ' + d.description : '')).join('; ');
     throw new Bad('PayPal said no (HTTP ' + r.status + '): ' + (out.message || out.name || 'unknown error') + (detail ? ' [' + detail + ']' : ''));
   }

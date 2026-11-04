@@ -28,7 +28,7 @@ export async function addCard({ setupTokenId, cardId, makeDefault }) {
 export async function removeCard({ vaultId } = {}) {
   const w = load('wallet'), card = w.find(x => x.vaultId === vaultId);
   if (!card) throw new Bad('That card isn\'t in the wallet.');
-  await paypal.deletePaymentToken(vaultId);
+  if (!dryRun()) await paypal.deletePaymentToken(vaultId);
   const left = w.filter(x => x.vaultId !== vaultId);
   if (card.isDefault && left.length) left[0].isDefault = true;
   save('wallet', left);
@@ -101,13 +101,37 @@ async function dryRunPay() {
   return { orderId: 'DRYRUN-' + randomUUID().slice(0, 8).toUpperCase(), status: 'COMPLETED', captureStatus: 'COMPLETED', dryRun: true };
 }
 
+// With no PayPal keys, dry run still needs cards to choose between: the same three the tests use, if the wallet is empty.
+export function seedDemoWallet() {
+  if (!dryRun() || load('wallet').length) return false;
+  save('wallet', [
+    { vaultId: 'demo-dc', cardId: 'double-cash', card: 'Citi Double Cash', brand: 'MASTERCARD', last4: '0011', isDefault: true },
+    { vaultId: 'demo-gold', cardId: 'amex-gold', card: 'Amex Gold', brand: 'AMEX', last4: '0026', isDefault: false },
+    { vaultId: 'demo-bcp', cardId: 'bcp', card: 'Amex Blue Cash Preferred', brand: 'AMEX', last4: '1881', isDefault: false }
+  ]);
+  return true;
+}
+
+// A "processing" receipt is saved before PayPal is called, so a crash or restart mid-payment leaves a record that
+// counts toward the budget and answers purchase_status, instead of a charge nobody knows about.
 async function charge(purchase, c, extra = {}) {
-  const receipt = { ...await chargeInOrder(purchase, c, load('wallet'), dryRun() ? dryRunPay : undefined), ...extra, ...(dryRun() ? { dryRun: true } : {}) };
-  const receipts = load('receipts');
-  receipts.push(receipt);
-  save('receipts', receipts);
+  const pid = randomUUID();
+  save('receipts', [...load('receipts'), { ...receiptFrom(purchase, c, c.best, { id: pid, status: 'processing', attempts: [], declined: [] }), ...extra }]);
+  let receipt;
+  try { receipt = { ...await chargeInOrder(purchase, c, load('wallet'), dryRun() ? dryRunPay : undefined), ...extra, ...(dryRun() ? { dryRun: true } : {}) }; }
+  catch (e) { markUnknown(r => r.id === pid, String(e && e.message || e)); throw e; }
+  save('receipts', load('receipts').map(r => r.id === pid ? receipt : r));
   return receipt;
 }
+
+function markUnknown(which, why) {
+  const all = load('receipts'); let n = 0;
+  for (const r of all) if (r.status === 'processing' && which(r)) { r.status = 'unknown'; r.attempts = [{ card: r.card, result: 'unknown', error: why }]; n++; }
+  if (n) save('receipts', all);
+  return n;
+}
+// At startup: a payment still "processing" was cut off by a crash or restart, and PayPal may or may not have charged it.
+export const recoverInterrupted = () => markUnknown(() => true, 'AgentPay stopped before PayPal answered. Check PayPal before paying again.');
 
 // One payment at a time: parallel pay calls would each pass the budget check before any of their receipts is saved.
 // ponytail: one queue for the one server process; a lock per wallet if it ever serves several people.
@@ -117,10 +141,10 @@ const oneAtATime = fn => (...args) => { const run = queue.then(() => fn(...args)
 // Pays if the policy allows it; otherwise holds the purchase for approval and says why.
 export const pay = oneAtATime(async function (p) {
   const purchase = parsePurchase(p), c = choose(load('wallet'), purchase);
-  const verdict = check(load('policy'), load('receipts'), { ...purchase, category: c.category });
+  const verdict = check(load('policy'), load('receipts'), { ...purchase, category: c.category, guessedCategory: c.guessedCategory, store: c.store }, new Date(), load('pending'));
   if (!verdict.ok) {
     const pending = load('pending');
-    const held = { id: randomUUID(), at: new Date().toISOString(), purchase, card: c.best.card, percentBack: c.best.percentBack, reasons: verdict.reasons };
+    const held = { id: randomUUID(), at: new Date().toISOString(), purchase, store: c.store, card: c.best.card, percentBack: c.best.percentBack, reasons: verdict.reasons };
     pending.push(held);
     save('pending', pending);
     return { status: 'needs_approval', pendingId: held.id, reasons: verdict.reasons, card: c.best.card, approveAt: 'http://localhost:' + (process.env.PORT || 4242) + '/approvals' };
@@ -128,7 +152,14 @@ export const pay = oneAtATime(async function (p) {
   return charge(purchase, c);
 });
 
-export function pending() { return load('pending'); }
+// Each held purchase with the card it would pay with now: the wallet may have changed since it was held.
+export function pending() {
+  const w = load('wallet');
+  return load('pending').map(h => {
+    try { const c = choose(w, h.purchase); return { ...h, card: c.best.card, percentBack: c.best.percentBack }; }
+    catch (e) { if (e instanceof Bad) return { ...h, card: null, percentBack: 0 }; throw e; }
+  });
+}
 
 export const approve = oneAtATime(async function (id) {
   const list = load('pending'), held = list.find(x => x.id === id);
@@ -153,7 +184,7 @@ export function purchaseStatus(id) {
   const waiting = load('pending').find(x => x.id === id);
   if (waiting) return { status: 'waiting_for_approval', reasons: waiting.reasons, since: waiting.at };
   const receipt = load('receipts').find(r => r.heldId === id);
-  if (receipt) return { status: { paid: 'approved_and_paid', unknown: 'approved_payment_result_unknown' }[receipt.status] || 'approved_but_payment_failed', receipt };
+  if (receipt) return { status: { paid: 'approved_and_paid', unknown: 'approved_payment_result_unknown', processing: 'approved_payment_in_progress' }[receipt.status] || 'approved_but_payment_failed', receipt };
   const no = load('declined').find(x => x.id === id);
   if (no) return { status: 'declined', at: no.at };
   throw new Bad('No purchase with that id.');

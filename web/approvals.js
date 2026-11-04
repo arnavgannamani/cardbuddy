@@ -19,7 +19,7 @@
         var when = new Date(p.at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
         return '<div class="held"><div class="held-main"><b class="amount">' + money(p.purchase.amount) + '</b><div><b>' + esc(what) + '</b><small>' + esc(where ? where + ' · ' + when : when) + '</small></div></div>' +
           '<ul class="why">' + p.reasons.map(function (r) { return '<li>' + esc(cap(r)) + '</li>'; }).join('') + '</ul>' +
-          '<div class="held-foot"><small>If approved: <b>' + esc(p.card) + '</b>, ' + p.percentBack + '% back (' + money(p.purchase.amount * p.percentBack / 100) + ')</small>' +
+          '<div class="held-foot"><small>' + (p.card ? 'If approved: <b>' + esc(p.card) + '</b>, ' + p.percentBack + '% back (' + money(p.purchase.amount * p.percentBack / 100) + ')' : 'No card in your wallet can pay this. Add one on the Wallet page first.') + '</small>' +
           '<span class="acts"><button class="ghost" data-decline="' + esc(p.id) + '">Decline</button><button data-approve="' + esc(p.id) + '">Approve and pay</button></span></div></div>';
       }).join('') : '<div class="empty-state"><b>Nothing waiting</b><p>When your agent tries a purchase over your limits, or in a category you want to see first, it stops here instead of being charged.</p></div>';
       if (window.agentpayRefreshCount) window.agentpayRefreshCount();

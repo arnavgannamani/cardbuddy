@@ -32,4 +32,18 @@ assert.equal(check(policy, [], { amount: 40, category: 'dining' }).ok, true);
 assert.equal(check(policy, [], { amount: 300, category: 'other' }).ok, false);
 assert.equal(check(policy, [], { amount: 20, category: 'travel' }).ok, false);
 
+// Store rules: a repeat, a split, a store with a purchase already waiting, and a merchant the agent mislabels.
+const now = new Date(), minsAgo = m => new Date(now - m * 60e3).toISOString();
+const paidHere = [{ status: 'paid', at: minsAgo(10), amount: 100, merchant: 'BESTBUY.COM' }];
+const why = (receipts, p, pending) => check(policy, receipts, p, now, pending).reasons.join('; ');
+assert.match(why(paidHere, { amount: 100, category: 'online', store: 'BESTBUY.COM' }), /already paid at BESTBUY.COM in the last 24 hours/);
+assert.match(why(paidHere, { amount: 60, category: 'online', store: 'BESTBUY.COM' }), /in the last hour, it comes to \$160.00/);
+assert.equal(check(policy, paidHere, { amount: 60, category: 'online', store: 'TARGET.COM' }, now).ok, true);
+assert.match(why([], { amount: 50, category: 'online', store: 'BESTBUY.COM' }, [{ store: 'BESTBUY.COM', purchase: { amount: 300 } }]), /\$300.00 purchase at BESTBUY.COM is already waiting/);
+const spirit = choose(wallet, { merchant: 'Spirit Airlines', category: 'other', amount: 30 });
+assert.equal(spirit.guessedCategory, 'travel');
+assert.match(why([], { amount: 30, category: 'other', guessedCategory: spirit.guessedCategory, store: spirit.store }), /reads SPIRIT AIRLINES as travel/);
+assert.equal(choose(wallet, { site: 'tinyshop-example.xyz', category: 'online', amount: 5 }).store, 'TINYSHOP-EXAMPLE.XYZ'); // unknown site, no merchant
+assert.throws(() => choose(wallet, { site: 'tinyshop-example.xyz', amount: 5 }), /doesn't know tinyshop-example.xyz/);
+
 console.log('step 1 ok: card choice and spending rules');

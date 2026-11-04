@@ -87,4 +87,7 @@ server.on('error', e => {
   console.error(`Port ${PORT} is already in use, probably by AgentPay running in another terminal. Stop that one (Ctrl+C there) and start again.`);
   process.exit(1);
 });
+const cutOff = ap.recoverInterrupted();
+if (cutOff) console.log(`${cutOff} payment${cutOff > 1 ? 's were' : ' was'} cut off when AgentPay last stopped; marked unknown on Receipts. Check PayPal before paying again.`);
+if (ap.seedDemoWallet()) console.log('Dry run with an empty wallet: added three demo cards (Citi Double Cash, Amex Gold, Blue Cash Preferred).');
 server.listen(PORT, '127.0.0.1', () => console.log('AgentPay running at http://localhost:' + PORT + (process.env.AGENTPAY_DRY_RUN === '1' ? ' (dry run: PayPal is never called)' : '')));

@@ -16,6 +16,10 @@ fs.writeFileSync(path.join(DATA, 'wallet.json'), JSON.stringify([
   { vaultId: 'test-gold', cardId: 'amex-gold', card: 'Amex Gold', brand: 'VISA', last4: '0026', isDefault: false },
   { vaultId: 'test-bcp', cardId: 'bcp', card: 'Amex Blue Cash Preferred', brand: 'VISA', last4: '1881', isDefault: false }
 ]));
+// A payment cut off by a crash last year: on start, AgentPay marks it unknown instead of leaving it "processing".
+fs.writeFileSync(path.join(DATA, 'receipts.json'), JSON.stringify([
+  { id: 'cut-off', status: 'processing', at: new Date(Date.now() - 400 * 864e5).toISOString(), merchant: 'WHOLE FOODS MARKET', description: 'cut off', amount: 12, card: 'Amex Blue Cash Preferred', percentBack: 6, earned: 0.72, defaultCard: 'Citi Double Cash', defaultEarned: 0.24, attempts: [], declined: [] }
+]));
 const env = { ...process.env, PORT: String(PORT), AGENTPAY_DRY_RUN: '1', AGENTPAY_DATA: DATA, AGENTPAY_URL: 'http://localhost:' + PORT };
 
 const server = spawn(process.execPath, [path.join(ROOT, 'server.mjs')], { env, stdio: ['ignore', 'pipe', 'inherit'] });
@@ -73,7 +77,18 @@ try {
   const rules = await call('spending_rules', {});
   assert.equal(rules.spentThisMonth, 175.25);
   console.log(`  rules: $${rules.perPurchase} a purchase, $${rules.monthlyBudget} a month, $${rules.leftThisMonth} left`);
-  assert.equal((await call('list_receipts', { limit: 5 })).receipts.length, 2);
+  const listed = (await call('list_receipts', { limit: 5 })).receipts;
+  assert.equal(listed.length, 3); assert.equal(listed.find(r => r.description === 'cut off').status, 'unknown');
+  console.log('  a payment cut off by a restart shows as unknown');
+
+  // A split: $60 twice at one store within the hour (and a repeat of the same amount) waits for approval.
+  assert.equal((await call('pay', { amount: 60, site: 'doordash.com', description: 'Dinner, part 1' })).status, 'paid');
+  const split = await call('pay', { amount: 60, site: 'doordash.com', description: 'Dinner, part 2' });
+  assert.equal(split.status, 'needs_approval'); assert.match(split.reasons.join(), /last hour/);
+  // An airline called "other" still trips the travel rule.
+  const spirit = await call('pay', { amount: 30, merchant: 'Spirit Airlines', category: 'other', description: 'Seat fee' });
+  assert.equal(spirit.status, 'needs_approval'); assert.match(spirit.reasons.join(), /reads SPIRIT AIRLINES as travel/);
+  console.log('  split order and mislabelled airline: both held');
 
   assert.match((await call('pay', { amount: 5, site: 'x.com', description: 'x', perPurchase: 9999 })).error, /Unknown argument/); // can't pass rule changes
   assert.match((await call('pay', { amount: 5, description: 'x' })).error, /site|merchant/);

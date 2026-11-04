@@ -47,9 +47,10 @@
         el('td', {}, el('span', { className: held ? 'pill pos' : 'pill neg', textContent: held ? 'Held for you' : 'Paid' })));
     }));
     const lh = sr.legitimatePurchasesHeld;
-    id('dupnote').replaceChildren(el('b', { textContent: 'What gets past the rules: ' }),
-      `the duplicate order is under the $${p.perPurchase} limit and the rules don't look for repeats yet. A rule that holds the same merchant and amount within 24 hours would catch it and hold nothing else this year. ` +
-      `The $${p.perPurchase} limit also asks about ${lh.count} of ${lh.of} ordinary purchases.`);
+    const split = lh.byReason['split at the same store'] || 0;
+    id('dupnote').replaceChildren(el('b', { textContent: 'What the rules cost: ' }),
+      `the duplicate order is under the $${p.perPurchase} limit, but the same amount at the same store within 24 hours is held. ` +
+      `The rules also ask about ${lh.count} of ${lh.of} ordinary purchases: mostly the $${p.perPurchase} limit` + (split ? `, plus ${split} same-day orders at one store that add up past it` : '') + '.');
 
     const fact = (t, d) => el('div', {}, el('b', { textContent: t }), d);
     id('facts').replaceChildren(

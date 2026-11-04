@@ -410,8 +410,10 @@
         "amount": 96.12,
         "category": "groceries",
         "withoutAgentPay": "went through",
-        "withAgentPay": "went through",
-        "reasons": []
+        "withAgentPay": "held for approval",
+        "reasons": [
+          "$96.12 was already paid at WHOLE FOODS MARKET in the last 24 hours"
+        ]
       },
       {
         "key": "tv",
@@ -424,7 +426,7 @@
         "withoutAgentPay": "went through",
         "withAgentPay": "held for approval",
         "reasons": [
-          "$1249.00 is over the $100 per-purchase limit"
+          "$1,249.00 is over the $100.00 per-purchase limit"
         ]
       },
       {
@@ -438,7 +440,7 @@
         "withoutAgentPay": "went through",
         "withAgentPay": "held for approval",
         "reasons": [
-          "$612.00 is over the $100 per-purchase limit",
+          "$612.00 is over the $100.00 per-purchase limit",
           "travel purchases always need your approval"
         ]
       }
@@ -446,20 +448,22 @@
     "mistakeTotal": 1957.12,
     "wentOutWithoutHumanCheck": {
       "withoutAgentPay": 1957.12,
-      "withAgentPay": 96.12
+      "withAgentPay": 0
     },
     "legitimatePurchasesHeld": {
-      "count": 68,
+      "count": 70,
       "of": 329,
-      "spend": 11380.71,
+      "spend": 11473.13,
       "byReason": {
         "per-purchase limit": 68,
-        "travel category": 5
+        "travel category": 5,
+        "split at the same store": 2
       },
       "byCategory": {
         "groceries": 39,
         "online": 24,
-        "travel": 5
+        "travel": 5,
+        "amazon": 2
       }
     },
     "groceryOrdersUnderLimit": {
@@ -470,40 +474,12 @@
       "count": 261,
       "of": 329
     },
-    "suggestedDuplicateRule": {
-      "rule": "Hold a purchase with the same merchant and the same amount as a paid purchase in the last 24 hours (not in AgentPay yet; simulated here)",
-      "mistakes": [
-        {
-          "key": "duplicate",
-          "withAgentPay": "held for approval",
-          "reasons": [
-            "same merchant and amount as a purchase 1h earlier"
-          ]
-        },
-        {
-          "key": "tv",
-          "withAgentPay": "held for approval",
-          "reasons": [
-            "$1249.00 is over the $100 per-purchase limit"
-          ]
-        },
-        {
-          "key": "flight",
-          "withAgentPay": "held for approval",
-          "reasons": [
-            "$612.00 is over the $100 per-purchase limit",
-            "travel purchases always need your approval"
-          ]
-        }
-      ],
-      "extraLegitHeld": 0
-    },
     "perPurchase200": {
       "label": "Sensitivity: per-purchase limit $200",
       "mistakes": [
         {
           "key": "duplicate",
-          "withAgentPay": "went through"
+          "withAgentPay": "held for approval"
         },
         {
           "key": "tv",
