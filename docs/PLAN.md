@@ -49,6 +49,7 @@ Claude / any MCP agent ──► agentpay-mcp ──► policy check ──► c
 - Store rules: the same amount at the same store within 24 hours, purchases at one store within an hour that add up
   past the limit, or a store with a purchase already waiting, all wait for approval. An unknown merchant is also
   checked against the engine's own reading of its name. Payments interrupted by a restart are kept as "unknown".
+- Hold alerts by email (`src/notify.mjs`): Gmail with an App Password, sent in the background, off without settings.
 - Web app restyled (taste-skill, achromatic ledger in PointMaxx colours), smooth page changes.
 
 Answered: unattended charges work in the sandbox (question 1); the person names each card when vaulting it (question 3).
@@ -58,7 +59,6 @@ Answered: unattended charges work in the sandbox (question 1); the person names 
 | When | Work |
 |---|---|
 | Now | **Name**: CardBuddy (Mihir's pick) vs PointMaxx Route; check it's free (app stores, domain, USPTO). Then rename everywhere. |
-| Nov 4 | **Hold notifications by email** (needs `GMAIL_USER` and `GMAIL_APP_PASSWORD` in `.env` and a recipient). |
 | Nov 5 | **One real sandbox run through the agent** (not dry run), for a real PayPal order id in the video. Raise the demo budget to $2,500. |
 | Nov 5–6 | **Hardening**: try to break it (bad inputs, PayPal down, server restarted mid-approval, two approvals at once, empty wallet) and fix what breaks. |
 | Nov 6–7 | **Hosted demo** so anyone can try it without installing. Seed a demo wallet. |

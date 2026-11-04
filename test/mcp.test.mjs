@@ -20,7 +20,8 @@ fs.writeFileSync(path.join(DATA, 'wallet.json'), JSON.stringify([
 fs.writeFileSync(path.join(DATA, 'receipts.json'), JSON.stringify([
   { id: 'cut-off', status: 'processing', at: new Date(Date.now() - 400 * 864e5).toISOString(), merchant: 'WHOLE FOODS MARKET', description: 'cut off', amount: 12, card: 'Amex Blue Cash Preferred', percentBack: 6, earned: 0.72, defaultCard: 'Citi Double Cash', defaultEarned: 0.24, attempts: [], declined: [] }
 ]));
-const env = { ...process.env, PORT: String(PORT), AGENTPAY_DRY_RUN: '1', AGENTPAY_DATA: DATA, AGENTPAY_URL: 'http://localhost:' + PORT };
+// GMAIL_USER set but empty: it wins over .env, so a test never emails anyone.
+const env = { ...process.env, PORT: String(PORT), AGENTPAY_DRY_RUN: '1', AGENTPAY_DATA: DATA, AGENTPAY_URL: 'http://localhost:' + PORT, GMAIL_USER: '', GMAIL_APP_PASSWORD: '' };
 
 const server = spawn(process.execPath, [path.join(ROOT, 'server.mjs')], { env, stdio: ['ignore', 'pipe', 'inherit'] });
 await new Promise((ok, no) => { server.stdout.on('data', d => String(d).includes('running') && ok()); server.on('exit', no); });

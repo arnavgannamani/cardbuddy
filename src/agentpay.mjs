@@ -5,6 +5,7 @@ import { choose, cardName, Bad } from './choose.mjs';
 import { check, spentThisMonth } from './policy.mjs';
 import { load, save } from './store.mjs';
 import * as paypal from './paypal.mjs';
+import { notifyHeld, alertsOn } from './notify.mjs';
 
 const money = x => Math.round(x * 100) / 100;
 
@@ -147,7 +148,11 @@ export const pay = oneAtATime(async function (p) {
     const held = { id: randomUUID(), at: new Date().toISOString(), purchase, store: c.store, card: c.best.card, percentBack: c.best.percentBack, reasons: verdict.reasons };
     pending.push(held);
     save('pending', pending);
-    return { status: 'needs_approval', pendingId: held.id, reasons: verdict.reasons, card: c.best.card, approveAt: 'http://localhost:' + (process.env.PORT || 4242) + '/approvals' };
+    const approveAt = 'http://localhost:' + (process.env.PORT || 4242) + '/approvals';
+    // The email goes out in the background: a slow or failed alert never holds up or breaks the agent's answer.
+    // ponytail: one email per hold; an agent that ignores "never retry" gets one per attempt.
+    notifyHeld(held, approveAt).catch(e => console.error('Hold alert not sent: ' + e.message));
+    return { status: 'needs_approval', pendingId: held.id, reasons: verdict.reasons, card: c.best.card, approveAt, personAlerted: alertsOn() };
   }
   return charge(purchase, c);
 });

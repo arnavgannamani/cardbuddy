@@ -27,7 +27,8 @@ confirmation step.
    that always need your approval. AgentPay also holds a purchase that repeats one at the same store within 24 hours,
    that adds up past the limit with others at that store within an hour (a split order), or that comes from a store
    with a purchase already waiting. Anything outside the rules waits on AgentPay's Approvals page for you to approve or
-   decline. This is the human-in-the-loop step agent payments are missing.
+   decline, with an email to your phone if you turn alerts on. This is the human-in-the-loop step agent payments are
+   missing.
 4. **Pays through PayPal.** AgentPay creates and captures the order with the PayPal Orders API using the chosen card's
    vault token (sandbox for the hackathon).
 5. **A rewards receipt.** Each purchase logs: what was bought, the card used, what it earned, and what your default card
@@ -66,6 +67,11 @@ You need Node 18 or newer and a free PayPal developer account. Everything runs i
 6. **Let an agent shop.** In another terminal, run `claude` in the repo folder and allow the `agentpay` tools. Try:
    "Order $40 of dinner from doordash.com, then a $1,249 TV from bestbuy.com." Dinner pays on the best card; the TV
    waits at http://localhost:4242/approvals.
+
+**Get an email when a purchase waits (optional).** Turn on 2-Step Verification for a Google account, make an App
+Password at myaccount.google.com/apppasswords, and put `GMAIL_USER` and `GMAIL_APP_PASSWORD` in `.env` (and
+`ALERT_EMAIL` to send it somewhere else). Restart AgentPay; it prints where alerts go. Each held purchase then emails
+you what the agent tried, why it waited, and a link to the Approvals page.
 
 **No PayPal keys?** `npm run dry` runs everything except the PayPal calls, and starts with three demo cards so there's
 something to choose between. Receipts are marked as dry runs.

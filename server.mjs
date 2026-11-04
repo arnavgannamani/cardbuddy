@@ -8,6 +8,7 @@ import './src/env.mjs';
 import * as ap from './src/agentpay.mjs';
 import { holdable, CATEGORIES, E, Bad } from './src/choose.mjs';
 import { createSetupToken } from './src/paypal.mjs';
+import { alertsOn, alertsTo } from './src/notify.mjs';
 
 const WEB = path.join(path.dirname(fileURLToPath(import.meta.url)), 'web');
 const PORT = Number(process.env.PORT || 4242);
@@ -89,5 +90,6 @@ server.on('error', e => {
 });
 const cutOff = ap.recoverInterrupted();
 if (cutOff) console.log(`${cutOff} payment${cutOff > 1 ? 's were' : ' was'} cut off when AgentPay last stopped; marked unknown on Receipts. Check PayPal before paying again.`);
+console.log(alertsOn() ? `Hold alerts: emailed to ${alertsTo()} through Gmail.` : 'Hold alerts: off (add GMAIL_USER and GMAIL_APP_PASSWORD to .env to get an email when a purchase waits for you).');
 if (ap.seedDemoWallet()) console.log('Dry run with an empty wallet: added three demo cards (Citi Double Cash, Amex Gold, Blue Cash Preferred).');
 server.listen(PORT, '127.0.0.1', () => console.log('AgentPay running at http://localhost:' + PORT + (process.env.AGENTPAY_DRY_RUN === '1' ? ' (dry run: PayPal is never called)' : '')));

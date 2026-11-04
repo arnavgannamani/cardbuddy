@@ -53,11 +53,11 @@ const TOOLS = [
   },
   {
     name: 'pay',
-    description: 'Pay for a purchase through PayPal with the card that earns the most. If the purchase is outside the person\'s spending rules it is NOT paid: the result has status "needs_approval", a pendingId and the reasons. Then tell the person it is waiting for their approval and check later with purchase_status. Never retry, split a purchase into smaller ones, or change the amount to get under the rules. If the status is "unknown", PayPal didn\'t answer in time and may have charged: do not pay again, tell the person to check PayPal.',
+    description: 'Pay for a purchase through PayPal with the card that earns the most. If the purchase is outside the person\'s spending rules it is NOT paid: the result has status "needs_approval", a pendingId and the reasons. Then tell the person it is waiting for their approval (if personAlertedByEmail is true, they\'ve been emailed about it) and check later with purchase_status. Never retry, split a purchase into smaller ones, or change the amount to get under the rules. If the status is "unknown", PayPal didn\'t answer in time and may have charged: do not pay again, tell the person to check PayPal.',
     inputSchema: { type: 'object', additionalProperties: false, required: ['amount', 'description'], properties: PURCHASE },
     run: async a => {
       const r = await api('/api/pay', purchase(a));
-      if (r.status === 'needs_approval') return { status: 'needs_approval', pendingId: r.pendingId, reasons: r.reasons, cardIfApproved: r.card, approveAt: r.approveAt };
+      if (r.status === 'needs_approval') return { status: 'needs_approval', pendingId: r.pendingId, reasons: r.reasons, cardIfApproved: r.card, approveAt: r.approveAt, personAlertedByEmail: r.personAlerted };
       return receipt(r);
     }
   },
