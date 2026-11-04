@@ -5,9 +5,9 @@ Spoken lines are in quotes; *[on screen]* notes say what's shown. "Footage 0:36"
 recording `demo-video/cardbuddy-demo.mp4` (1:50, 1920×1080, real PayPal sandbox results, no audio).
 
 ## 1. Cold open: the hook (0:00–0:10)
-*[Footage 1:01–1:08, chat: "get me that 65-inch TV, $1,249", agent replies that it's held. Zoom in on "held for your
+*[Footage 1:01–1:08, chat: "also get me that 65-inch TV", agent replies that it's held. Zoom in on "held for your
 approval."]*
-> "My AI agent just tried to spend twelve hundred dollars on a TV. And it couldn't, because CardBuddy stopped it."
+> "My AI agent just tried to spend thirteen hundred dollars on a TV. And it couldn't, because CardBuddy stopped it."
 
 ## 2. You two (0:10–0:20)
 *[Face clip: both founders, one line each]*
@@ -34,10 +34,12 @@ approval."]*
 > for dining, the Blue Cash Preferred for groceries, your Double Cash everywhere else."
 
 ## 6. The agent shops (1:08–1:34)
-*[Footage 0:36–1:01, chat: groceries, then dinner. Zoom in on the "+$3.45" result card, then "+$1.52".]*
-> "Then you just text your agent. Groceries? CardBuddy puts them on the Blue Cash Preferred, six percent back, three
-> forty-five more than my default card. Dinner goes on the Amex Gold. Each one is a real PayPal order, charged to the
-> vaulted card, without me lifting a finger."
+*[Footage 0:36–1:01, chat: "Can you order my weekly groceries?", then "and pad thai for dinner tonight". Zoom in on the
+"+$3.45" result card, then "+$1.48". The on-screen caption says the shops are demo stores standing in for PayPal
+merchants.]*
+> "Then you just text your agent. No prices, no card numbers. It finds my groceries at the store, and CardBuddy puts them
+> on the Blue Cash Preferred: six percent back, three forty-five more than my default card. Dinner goes on the Amex Gold.
+> Each one is a real PayPal order, charged to the vaulted card, without me lifting a finger."
 
 ## 7. The held purchase (1:34–2:00)
 *[Footage 1:01–1:33: TV held → Approvals page → Approve → agent confirms. Insert the phone email clip here if there is
@@ -47,7 +49,7 @@ one.]*
 > only switches cards when it actually earns you more."
 
 ## 8. Receipts (2:00–2:12)
-*[Footage 1:33–1:45, Receipts. Zoom in on "+$4.97" and one PayPal order id.]*
+*[Footage 1:32–1:44, Receipts. Zoom in on "+$4.93" and one PayPal order id.]*
 > "Every purchase gets a receipt: the card it used, what it earned against my default, and the PayPal order behind it."
 
 ## 9. How it's built (2:12–2:32)
@@ -83,12 +85,15 @@ one.]*
 
 ## The real results in the footage
 
-From the recording run (PayPal sandbox):
+From the recording run (PayPal sandbox, Nov 4 v2: the agent finds each item in the demo store with `search_store` and
+pays with `checkout`; the person never says a price). The first version, with prices in the texts, is kept as
+`demo-video/cardbuddy-demo-v1.mp4`.
 
-| Purchase | Card CardBuddy picked | Back | Earned vs default | PayPal order |
-|---|---|---:|---|---|
-| Weekly groceries, $86.40 (wholefoodsmarket.com) | Amex Blue Cash Preferred | 6% | $5.18 vs $1.73 (+$3.45) | 1SB628763M6765350 |
-| Dinner, $38.00 (doordash.com) | Amex Gold | 6% | $2.28 vs $0.76 (+$1.52) | 90997353GW371512T |
-| 65-inch TV, $1,249.00 (bestbuy.com), held, then approved | Citi Double Cash (the default) | 2% | $24.98, same as default | 7VC29271M8484325L |
+| Purchase | Demo store | Total | Card CardBuddy picked | Back | Earned vs default | PayPal order |
+|---|---|---:|---|---:|---|---|
+| Weekly grocery basket | Greenleaf Market | $86.40 | Amex Blue Cash Preferred | 6% | $5.18 vs $1.73 (+$3.45) | 8YR24026TU583144K |
+| Pad thai dinner for two | Night Owl Kitchen | $37.01 (tax, delivery) | Amex Gold | 6% | $2.22 vs $0.74 (+$1.48) | 8S8894124C658172F |
+| 65-inch 4K TV, held, then approved | Voltline Electronics | $1,348.92 (tax) | Citi Double Cash (the default) | 2% | $26.98, same as default | 9RJ38521D76827206 |
 
-Totals: $32.44 in rewards, +$4.97 over the default card.
+Totals: $34.38 in rewards, +$4.93 over the default card. The TV was held because "$1,348.92 is over the $100.00
+per-purchase limit".
