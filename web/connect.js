@@ -73,7 +73,7 @@
   showWallet();
 
   api('/api/config').then(function (cfg) {
-    if (!cfg.clientId) return say('Put the sandbox PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET in .env, then restart the server.', true);
+    if (!cfg.clientId) { $('ppStatus').textContent = ''; return say('Put the sandbox PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET in .env, then restart the server.', true); }
     var s = document.createElement('script');
     s.src = 'https://www.paypal.com/sdk/js?client-id=' + encodeURIComponent(cfg.clientId) + '&components=card-fields';
     s.onerror = function () { say('PayPal didn\'t load. Check your connection.', true); };
@@ -98,7 +98,11 @@
       });
       if (!fields.isEligible()) return say('Card fields aren\'t available for this PayPal app. Turn on Advanced Credit and Debit Card Payments in the sandbox app.', true);
       var parts = [fields.NameField(), fields.NumberField(), fields.ExpiryField(), fields.CVVField()];
-      ['#name', '#number', '#expiry', '#cvv'].forEach(function (sel, i) { parts[i].render(sel); });
+      // PayPal's fields arrive as iframes a second or two after the page; until every one has drawn, the boxes show a
+      // "connecting" state instead of empty grey.
+      Promise.all(['#name', '#number', '#expiry', '#cvv'].map(function (sel, i) { return parts[i].render(sel); }))
+        .then(function () { $('cardForm').classList.remove('pp-wait'); $('ppStatus').textContent = ''; },
+          function () { $('ppStatus').textContent = 'PayPal\'s card fields didn\'t load. Refresh to try again.'; });
       $('save').disabled = false;
       $('save').onclick = function () {
         if (!$('which').value) return say('Choose which card this is first.', true);

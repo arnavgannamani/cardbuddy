@@ -31,6 +31,12 @@
     .same { color: var(--muted); }
     @media (min-width: 901px) { .sticky { position: sticky; top: 20px; } }
     .gain { font-weight: 600; }
+    /* Until PayPal's iframes have drawn, each box is an empty input outline with a quiet pulse, not a grey block. */
+    .field { position: relative; }
+    .pp-wait .field::before { content: ''; position: absolute; inset: 4px; z-index: 1; border: 1px solid var(--control); border-radius: var(--r-control); background: var(--surface); animation: sk 1.1s ease-in-out infinite alternate; }
+    .pp-status { margin: 6px 0 0; font-size: 12.5px; color: var(--muted); }
+    .pp-status:empty { display: none; }
+    @media (prefers-reduced-motion: reduce) { .pp-wait .field::before { animation: none; } }
     @media (max-width: 640px) { .track { display: none; } .hide-s { display: none; } .cardrow { grid-template-columns: 46px minmax(0, 1fr); padding: 16px; } .cardrow .acts { grid-column: 2; margin: -4px 0 0 -8px; flex-wrap: wrap; } .legend { display: none; } }
   </style>
 </head>
@@ -70,11 +76,14 @@
           <p class="hint">Sandbox: use a test card from your PayPal developer dashboard (Testing tools, Card testing). Never a real card.</p>
           <label for="which">Which card is this?</label>
           <select id="which"><option value="">Loading cards…</option></select>
-          <label>Name on card</label><div id="name" class="field"></div>
-          <label>Card number</label><div id="number" class="field"></div>
-          <div class="row2">
-            <div><label>Expiry</label><div id="expiry" class="field"></div></div>
-            <div><label>Security code</label><div id="cvv" class="field"></div></div>
+          <div id="cardForm" class="pp-wait">
+            <label>Name on card</label><div id="name" class="field"></div>
+            <label>Card number</label><div id="number" class="field"></div>
+            <div class="row2">
+              <div><label>Expiry</label><div id="expiry" class="field"></div></div>
+              <div><label>Security code</label><div id="cvv" class="field"></div></div>
+            </div>
+            <p class="pp-status" id="ppStatus" role="status">Connecting to PayPal's secure card fields…</p>
           </div>
           <label class="check"><input type="checkbox" id="makeDefault"> Make this my default card (what I'd pay with without CardBuddy)</label>
           <p style="margin:18px 0 0"><button id="save" disabled style="width:100%">Save card to PayPal</button></p>
