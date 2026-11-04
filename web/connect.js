@@ -36,7 +36,7 @@
     api('/api/wallet').then(function (w) {
       $('cardCount').textContent = w.length ? w.length + (w.length === 1 ? ' card' : ' cards') : '';
       if (!w.length) {
-        $('wallet').innerHTML = '<div class="pb"><p class="note">No cards yet. Add the cards you already carry; your agent can only pay with cards on this list.</p></div>';
+        $('wallet').innerHTML = '<div class="empty-state"><b>No cards yet</b><p>Add the cards you already carry. Your agent can only pay with cards on this list.</p></div>';
         $('routes').innerHTML = '<tr><td colspan="4" class="empty">Add a card to see where it wins.</td></tr>';
         if (window.cardbuddyReady) window.cardbuddyReady();
         return;

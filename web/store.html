@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; connect-src 'self'; img-src 'self'; style-src 'self'; font-src 'self'; base-uri 'none'; form-action 'none'">
+  <title>Demo store · CardBuddy</title>
+  <link rel="icon" href="/mark.svg">
+  <link rel="preload" href="/fonts/inter-tight-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/inter-tight-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/sora-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/app.css">
+  <script src="/shell.js"></script>
+</head>
+<body>
+  <header class="top"><div class="in">
+    <a class="brand" href="/" aria-label="CardBuddy by PointMaxx, wallet"><img src="/mark.svg" alt=""><b>CardBuddy</b><span>by PointMaxx</span></a>
+    <nav aria-label="Main"><a href="/">Wallet</a><a href="/approvals">Approvals <span class="count" id="pendingCount"></span></a><a href="/receipts">Receipts</a><a href="/store" aria-current="page">Store</a><a href="/simulation">Simulation</a></nav>
+    <div class="env"><i></i>PayPal sandbox</div>
+  </div></header>
+
+  <main>
+    <div class="head"><div>
+      <h1>The demo store</h1>
+      <p class="sub">Four made-up shops standing in for the PayPal merchants your agent buys from. Tell your agent what you want; it finds it here, the shop works out the total, and CardBuddy pays it with the card that earns the most.</p>
+    </div></div>
+
+    <div class="shops" id="shops"><section class="panel"><div class="pb"><span class="skel w40"></span></div></section></div>
+    <p class="note store-note">With real merchants, the total comes from the merchant's own PayPal checkout, and CardBuddy picks the card and checks your rules the same way.</p>
+  </main>
+
+  <footer class="foot">
+    <span><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M5.5 8.2 7.2 10l3.3-3.6"/></svg>The shops and items are fictional; payments are real PayPal sandbox orders.</span>
+    <span>Sandbox: no real money moves.</span>
+  </footer>
+  <script src="/store.js"></script>
+</body>
+</html>

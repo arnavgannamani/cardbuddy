@@ -52,6 +52,32 @@ const TOOLS = [
     }
   },
   {
+    name: 'search_store',
+    description: 'Search the CardBuddy demo store (fictional shops standing in for PayPal merchants: Greenleaf Market for groceries, Night Owl Kitchen for restaurant delivery, Voltline Electronics, Skyline Air for flights) for what the person asked for. Returns items with their ids and prices. Use it when the person names a thing to buy rather than an amount, then check out with checkout.',
+    inputSchema: { type: 'object', additionalProperties: false, required: ['query'], properties: {
+      query: { type: 'string', maxLength: 200, description: 'What to look for, in a few words, e.g. "weekly groceries" or "65 inch tv".' },
+      store: { type: 'string', maxLength: 100, description: 'Optional: one store\'s name or id to search in.' }
+    } },
+    run: async a => api('/api/shop/search', { query: a.query, store: a.store })
+  },
+  {
+    name: 'checkout',
+    description: 'Buy items from the demo store. The store works out the total (tax and delivery included) and CardBuddy pays it through PayPal with the card that earns the most, or holds it for the person\'s approval if it\'s outside their rules (same as pay). All items must come from one store. If the person gave a limit ("keep it under $100"), pass it as maxTotal: a total above it waits for their approval instead of being paid. Never retry or split an order to get under the rules.',
+    inputSchema: { type: 'object', additionalProperties: false, required: ['items'], properties: {
+      items: { type: 'array', minItems: 1, maxItems: 20, description: 'The items to buy, from search_store.', items: { type: 'object', additionalProperties: false, required: ['id'], properties: {
+        id: { type: 'string', maxLength: 40, description: 'An item id from search_store.' },
+        quantity: { type: 'integer', minimum: 1, maximum: 20, description: 'How many (default 1).' }
+      } } },
+      maxTotal: { type: 'number', minimum: 0.01, maximum: 10000, description: 'Optional: the most the person said to spend on this order, in US dollars.' }
+    } },
+    run: async a => {
+      const r = await api('/api/shop/checkout', { items: a.items, maxTotal: a.maxTotal });
+      const cart = { store: r.cart.store, items: r.cart.items.map(i => ({ name: i.name, quantity: i.quantity, lineTotal: i.lineTotal })), subtotal: r.cart.subtotal, tax: r.cart.tax, delivery: r.cart.delivery, total: r.cart.total };
+      if (r.status === 'needs_approval') return { status: 'needs_approval', cart, pendingId: r.pendingId, reasons: r.reasons, cardIfApproved: r.card, approveAt: r.approveAt, personAlertedByEmail: r.personAlerted };
+      return { cart, ...receipt(r) };
+    }
+  },
+  {
     name: 'pay',
     description: 'Pay for a purchase through PayPal with the card that earns the most. If the purchase is outside the person\'s spending rules it is NOT paid: the result has status "needs_approval", a pendingId and the reasons. Then tell the person it is waiting for their approval (if personAlertedByEmail is true, they\'ve been emailed about it) and check later with purchase_status. Never retry, split a purchase into smaller ones, or change the amount to get under the rules. If the status is "unknown", PayPal didn\'t answer in time and may have charged: do not pay again, tell the person to check PayPal.',
     inputSchema: { type: 'object', additionalProperties: false, required: ['amount', 'description'], properties: PURCHASE },

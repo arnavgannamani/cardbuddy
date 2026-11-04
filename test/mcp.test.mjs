@@ -43,7 +43,7 @@ try {
   const init = (await rpc('initialize', { protocolVersion: '2025-06-18' })).result;
   assert.equal(init.serverInfo.name, 'cardbuddy');
   const tools = (await rpc('tools/list')).result.tools.map(t => t.name);
-  assert.deepEqual(tools, ['get_wallet', 'recommend_card', 'pay', 'purchase_status', 'list_receipts', 'spending_rules']);
+  assert.deepEqual(tools, ['get_wallet', 'recommend_card', 'search_store', 'checkout', 'pay', 'purchase_status', 'list_receipts', 'spending_rules']);
   console.log('  tools:', tools.join(', '));
 
   const w = await call('get_wallet', {});

@@ -14,10 +14,12 @@ export function spentThisMonth(receipts, now = new Date()) {
   return Math.round(spent * 100) / 100;
 }
 
-// purchase: { amount, category, guessedCategory?, store? }. pending: purchases already held for approval.
+// purchase: { amount, category, guessedCategory?, store?, maxTotal? }. pending: purchases already held for approval.
 export function check(policy, receipts, purchase, now = new Date(), pending = []) {
   const spent = spentThisMonth(receipts, now);
   const reasons = [];
+  // The person's own ceiling for this one purchase ("keep it under $100"), when the agent was given one.
+  if (purchase.maxTotal != null && purchase.amount > purchase.maxTotal) reasons.push(`the total came to ${usd(purchase.amount)}, more than the ${usd(purchase.maxTotal)} you set for this purchase`);
   if (purchase.amount > policy.perPurchase) reasons.push(`${usd(purchase.amount)} is over the ${usd(policy.perPurchase)} per-purchase limit`);
   if (spent + purchase.amount > policy.monthlyBudget) reasons.push(`it would take this month to ${usd(spent + purchase.amount)}, over the ${usd(policy.monthlyBudget)} budget`);
   if (policy.approveCategories.includes(purchase.category)) reasons.push(`${purchase.category} purchases always need your approval`);

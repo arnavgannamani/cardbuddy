@@ -1,0 +1,58 @@
+{
+  "_note": "Fictional demo stores: a stand-in for the PayPal merchants an agent shops at. Prices are in US dollars. taxRate applies to the subtotal; delivery is a flat fee.",
+  "stores": [
+    {
+      "id": "greenleaf",
+      "name": "Greenleaf Market",
+      "category": "groceries",
+      "about": "Groceries, delivered",
+      "taxRate": 0,
+      "delivery": 0,
+      "items": [
+        { "id": "gl-basket", "name": "Weekly grocery basket", "price": 86.40, "tags": ["groceries", "weekly", "usual", "basket", "produce", "eggs", "milk", "bread", "chicken"] },
+        { "id": "gl-bananas", "name": "Organic bananas, bunch", "price": 1.89, "tags": ["groceries", "fruit", "produce"] },
+        { "id": "gl-oatmilk", "name": "Oat milk, half gallon", "price": 4.29, "tags": ["groceries", "milk", "dairy free"] },
+        { "id": "gl-coffee", "name": "Whole bean coffee, 12 oz", "price": 13.99, "tags": ["groceries", "coffee"] },
+        { "id": "gl-towels", "name": "Paper towels, 6 rolls", "price": 12.49, "tags": ["groceries", "household", "paper towels"] }
+      ]
+    },
+    {
+      "id": "nightowl",
+      "name": "Night Owl Kitchen",
+      "category": "dining",
+      "about": "Restaurant delivery",
+      "taxRate": 0.08,
+      "delivery": 2.99,
+      "items": [
+        { "id": "no-padthai", "name": "Pad thai dinner for two", "price": 31.50, "tags": ["dinner", "thai", "noodles", "food", "delivery"] },
+        { "id": "no-pizza", "name": "Margherita pizza", "price": 18.00, "tags": ["dinner", "lunch", "pizza", "food", "delivery"] },
+        { "id": "no-bowl", "name": "Chicken burrito bowl", "price": 13.75, "tags": ["lunch", "dinner", "mexican", "food", "delivery"] }
+      ]
+    },
+    {
+      "id": "voltline",
+      "name": "Voltline Electronics",
+      "category": "online",
+      "about": "Electronics, shipped",
+      "taxRate": 0.08,
+      "delivery": 0,
+      "items": [
+        { "id": "vl-tv65", "name": "65-inch 4K TV", "price": 1249.00, "tags": ["tv", "television", "65", "4k", "electronics"] },
+        { "id": "vl-mount", "name": "TV wall mount", "price": 89.99, "tags": ["tv", "mount", "wall", "electronics"] },
+        { "id": "vl-hdmi", "name": "HDMI cable, 6 ft", "price": 14.99, "tags": ["hdmi", "cable", "tv", "electronics"] },
+        { "id": "vl-earbuds", "name": "Wireless earbuds", "price": 79.00, "tags": ["earbuds", "headphones", "audio", "electronics"] }
+      ]
+    },
+    {
+      "id": "skyline",
+      "name": "Skyline Air",
+      "category": "travel",
+      "about": "Flights",
+      "taxRate": 0,
+      "delivery": 0,
+      "items": [
+        { "id": "sk-sea-bos", "name": "Flight, Seattle to Boston, one way", "price": 612.00, "tags": ["flight", "travel", "seattle", "boston", "plane", "ticket"] }
+      ]
+    }
+  ]
+}

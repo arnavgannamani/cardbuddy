@@ -6,6 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import './src/env.mjs';
 import * as ap from './src/cardbuddy.mjs';
+import { catalog, search } from './src/shop.mjs';
 import { holdable, CATEGORIES, E, Bad } from './src/choose.mjs';
 import { createSetupToken } from './src/paypal.mjs';
 import { alertsOn, alertsTo } from './src/notify.mjs';
@@ -13,7 +14,7 @@ import { alertsOn, alertsTo } from './src/notify.mjs';
 const WEB = path.join(path.dirname(fileURLToPath(import.meta.url)), 'web');
 const PORT = Number(process.env.PORT || 4242);
 if (process.argv.includes('--dry-run')) process.env.CARDBUDDY_DRY_RUN = '1'; // npm run dry
-const PAGES = { '/': 'index.html', '/approvals': 'approvals.html', '/receipts': 'receipts.html', '/simulation': 'simulation.html' };
+const PAGES = { '/': 'index.html', '/approvals': 'approvals.html', '/receipts': 'receipts.html', '/simulation': 'simulation.html', '/store': 'store.html' };
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.json': 'application/json; charset=utf-8', '.woff2': 'font/woff2' }; // the charset keeps send() from re-encoding a file as JSON
 
 const ROUTES = {
@@ -32,11 +33,15 @@ const ROUTES = {
   'POST /api/purchase-status': b => ap.purchaseStatus(b.id),
   'GET /api/receipts': () => ap.receipts(),
   'GET /api/policy': () => ap.policy(),
-  'POST /api/policy': b => ap.setPolicy(b)
+  'POST /api/policy': b => ap.setPolicy(b),
+  // The demo store (src/shop.mjs): a fictional merchant the agent can search and check out at.
+  'GET /api/shop': () => catalog(),
+  'POST /api/shop/search': b => search(b),
+  'POST /api/shop/checkout': b => ap.checkout(b)
 };
 
 // What the agent's MCP server calls. Every other POST (approve, decline, rules, cards) is the person's, from these pages.
-const AGENT_ROUTES = new Set(['POST /api/recommend', 'POST /api/pay', 'POST /api/purchase-status']);
+const AGENT_ROUTES = new Set(['POST /api/recommend', 'POST /api/pay', 'POST /api/purchase-status', 'POST /api/shop/search', 'POST /api/shop/checkout']);
 const HOSTS = ['localhost:' + PORT, '127.0.0.1:' + PORT], ORIGINS = HOSTS.map(h => 'http://' + h);
 
 function readBody(req) {

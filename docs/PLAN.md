@@ -59,15 +59,18 @@ Answered: unattended charges work in the sandbox (question 1); the person names 
 | When | Work |
 |---|---|
 | Now | ~~Name~~: **CardBuddy**, renamed everywhere (Mihir, Nov 4). Still to check it is free: app stores, domain, USPTO. Repeat and split orders held; email hold alerts built (Mihir, Nov 3–4): turn them on with a Gmail App Password in `.env` (pending, Arnav). |
-| Nov 5 | **One real sandbox run through the agent** (not dry run), for a real PayPal order id in the video. Raise the demo budget to $2,500. |
+| ~~Nov 5~~ | ~~One real sandbox run through the agent~~ (done Nov 4: $91.40 groceries on the Blue Cash Preferred, PayPal order 8PW896237J498014B). Receipts now show PayPal order ids; `npm run reset` clears test history before a demo. |
+| Nov 4 | ~~Demo store~~ (done): four fictional shops (`src/shop.mjs`, `/store`); the agent searches and checks out, the shop supplies the total, so the person never has to give a price. A "keep it under $X" limit holds anything above it. Stands in for real PayPal merchants. |
+| Nov 5 | **Re-record the demo video's chat section** with no prices in the messages (the agent now finds them in the store), and the fixed "No cards yet" empty state. Splice into the existing video. |
 | Nov 5–6 | ~~Hardening~~ first pass done (Mihir, Nov 3: one payment at a time, no double charges, interrupted payments kept, safe data writes). Second pass after the fresh-machine test. |
 | Nov 6–7 | **Hosted demo** so anyone can try it without installing. Seed a demo wallet. |
-| Nov 7–8 | **README a judge can follow in 5 minutes**: clone, sandbox keys, `npm start`, open in Claude Code. Sandbox credentials safe to share. |
-| Nov 8 | **Make the repo public** after scanning git history for secrets; MIT license visible in the About section. Check PayPal Cashback and Venmo card terms before claiming them. Stretch: PayPal/Venmo checkout as a rail. |
+| ~~Nov 7–8~~ | ~~README a judge can follow~~ (done Nov 4: a 2-minute dry-run path, any MCP client, PayPal APIs used, built-during-the-hackathon section). Mihir's fresh-machine test checks it. Git history scanned for secrets: clean. |
+| Nov 8 | **Make the repo public** (history already scanned: clean; decide whether the PointMaxx engine data ships under MIT); MIT license visible in the About section. Check PayPal Cashback and Venmo card terms before claiming them. Stretch: PayPal/Venmo checkout as a rail. |
 | Nov 9–10 | **Video under 3 minutes**, public on YouTube: problem → agent buys groceries, right card pays → TV held, phone buzzes → approve/decline → receipts → simulation. No logos, card art or music. |
 | Nov 10 | **Devpost write-up**: problem, how it works, PayPal APIs used, the numbers, tokens saved, and a "built during the hackathon" paragraph. |
 | Wed Nov 11 | Final check from a clean clone, then submit. Deadline Thu Nov 12, 12:00 pm PT. |
 | Skip unless time | Extension at PayPal checkout. |
+| Next steps (pitch and write-up, not this build) | **Personal agents like Muse at PayPal merchants**: PayPal already lets people check out with Meta's Muse at PayPal merchants. CardBuddy is the layer between such an agent and the PayPal wallet (best card, the person's rules). Say "works with agents like Muse" as the direction; never claim an integration or partnership. Keep Muse and Meta out of the video (trademarks); name them in the write-up. |
 
 ## What the official rules require (read Nov 3)
 

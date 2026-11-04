@@ -59,17 +59,25 @@ watch Receipts and Approvals fill in. Node 18 or newer; there are no packages to
 
 ## Let an agent shop
 
-CardBuddy's MCP server is `mcp/server.mjs`. It has six tools: `get_wallet`, `recommend_card`, `pay`,
-`purchase_status`, `list_receipts` and `spending_rules`. The agent can read your rules but has no tool to change them or
-to approve its own purchases.
+CardBuddy's MCP server is `mcp/server.mjs`. It has eight tools: `get_wallet`, `recommend_card`, `search_store`,
+`checkout`, `pay`, `purchase_status`, `list_receipts` and `spending_rules`. The agent can read your rules but has no tool
+to change them or to approve its own purchases.
+
+**The demo store.** You shouldn't have to know what things cost. CardBuddy comes with four fictional shops standing in
+for the PayPal merchants an agent buys from: Greenleaf Market (groceries), Night Owl Kitchen (restaurant delivery),
+Voltline Electronics and Skyline Air (flights). See them at http://localhost:4242/store. The agent searches them
+(`search_store`), checks out a cart (`checkout`), and the shop works out the total with tax and delivery; CardBuddy then
+pays that total on the best card, or holds it. If you give a limit ("keep it under $50"), a total above it waits for
+you. With real merchants, the total comes from the merchant's own PayPal checkout instead.
 
 - **Claude Code:** open a session in the repo folder. `.mcp.json` connects the `cardbuddy` tools; allow them when asked.
 - **Any other MCP client:** add a server that runs `node /path/to/pointmaxx-agentpay/mcp/server.mjs` with the
   environment variable `CARDBUDDY_URL=http://localhost:4242`.
 
-Then ask it, for example: *"Order my weekly groceries from wholefoodsmarket.com, about $86. Then get dinner from
-doordash.com for $38, and a $1,249 TV from bestbuy.com."* Groceries go on the Blue Cash Preferred (6%), dinner on the
-Amex Gold, and the TV waits at http://localhost:4242/approvals because it's over the $100 per-purchase limit.
+Then ask it, for example: *"Order my weekly groceries, get pad thai for dinner tonight, and buy that 65-inch TV."* It
+finds each in the demo store and checks out: groceries go on the Blue Cash Preferred (6%), dinner on the Amex Gold, and
+the TV waits at http://localhost:4242/approvals because it's over the $100 per-purchase limit. For a store outside the
+demo, give the amount yourself: *"Pay $38 for dinner on doordash.com."*
 
 ## Run it with PayPal sandbox payments
 
@@ -150,8 +158,14 @@ recommender. CardBuddy uses them as a library to score cards.
 
 ## What's next
 
-A hosted connector so agents in other apps can use CardBuddy without running it locally; paying through PayPal and
-Venmo balances where their cards earn more; and the PointMaxx Chrome extension at PayPal checkout.
+- **Personal shopping agents at PayPal merchants.** PayPal already lets people check out with personal AI agents such
+  as Meta's Muse at PayPal merchants: the agent finds the product and the merchant's checkout supplies the total.
+  CardBuddy is the layer between that agent and the person's PayPal wallet: it picks the card that earns the most and
+  enforces their rules, so they approve only what's unusual instead of every purchase. The demo store stands in for
+  those merchants today.
+- A hosted connector so agents in other apps can use CardBuddy without running it locally.
+- Paying through PayPal and Venmo balances where their cards earn more, and the PointMaxx Chrome extension at PayPal
+  checkout.
 
 ## License
 

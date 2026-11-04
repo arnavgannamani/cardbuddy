@@ -6,6 +6,7 @@ import { check, spentThisMonth } from './policy.mjs';
 import { load, save } from './store.mjs';
 import * as paypal from './paypal.mjs';
 import { notifyHeld, alertsOn } from './notify.mjs';
+import * as shop from './shop.mjs';
 
 const money = x => Math.round(x * 100) / 100;
 
@@ -49,7 +50,14 @@ function parsePurchase(p = {}) {
   if (!isFinite(amount) || amount < 0.01 || amount > 10000) throw new Bad('amount must be from $0.01 to $10,000.');
   if (p.description != null && (typeof p.description !== 'string' || p.description.length > 120)) throw new Bad('description must be up to 120 characters.');
   if (p.merchant != null && (typeof p.merchant !== 'string' || p.merchant.length > 100)) throw new Bad('merchant must be a name of up to 100 characters.');
-  return { merchant: p.merchant, site: p.site, category: p.category, amount: money(amount), description: p.description || '' };
+  // The most the person said this purchase may cost ("keep it under $100"): over it, the purchase waits for them.
+  let maxTotal;
+  if (p.maxTotal != null) {
+    maxTotal = Number(p.maxTotal);
+    if (!isFinite(maxTotal) || maxTotal < 0.01 || maxTotal > 10000) throw new Bad('maxTotal must be from $0.01 to $10,000.');
+    maxTotal = money(maxTotal);
+  }
+  return { merchant: p.merchant, site: p.site, category: p.category, amount: money(amount), description: p.description || '', ...(maxTotal != null ? { maxTotal } : {}) };
 }
 
 // The card CardBuddy would use, and why, without paying.
@@ -193,6 +201,13 @@ export function purchaseStatus(id) {
   const no = load('declined').find(x => x.id === id);
   if (no) return { status: 'declined', at: no.at };
   throw new Bad('No purchase with that id.');
+}
+
+// Checks out a cart at the demo store: the store works out the total, then it's paid (or held) like any purchase.
+export async function checkout({ items, maxTotal } = {}) {
+  const cart = shop.quote(items);
+  const result = await pay({ amount: cart.total, merchant: cart.store, category: cart.category, description: shop.describe(cart), maxTotal });
+  return { cart, ...result };
 }
 
 export function receipts() {
