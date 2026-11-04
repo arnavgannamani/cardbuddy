@@ -1,32 +1,32 @@
 #!/usr/bin/env node
-// AgentPay as an MCP server: the tools an AI agent uses to pay. It is a thin client of the AgentPay server
-// (server.mjs, AGENTPAY_URL, default http://localhost:4242): the PayPal keys, the vault tokens and the spending rules
+// CardBuddy as an MCP server: the tools an AI agent uses to pay. It is a thin client of the CardBuddy server
+// (server.mjs, CARDBUDDY_URL, default http://localhost:4242): the PayPal keys, the vault tokens and the spending rules
 // stay there, so the agent can see the rules but has no tool to change them, and nothing it sends can skip them.
 // ponytail: the MCP wire format is written out by hand (JSON-RPC lines on stdin/stdout), as in pointmaxx-mcp.
-const BASE = (process.env.AGENTPAY_URL || 'http://localhost:4242').replace(/\/+$/, '');
+const BASE = (process.env.CARDBUDDY_URL || 'http://localhost:4242').replace(/\/+$/, '');
 const VERSION = '0.1.0', VERSIONS = ['2025-06-18', '2025-03-26', '2024-11-05'];
 const CATS = ['dining', 'groceries', 'gas', 'travel', 'transit', 'streaming', 'entertainment', 'amazon', 'online', 'drugstore', 'utilities', 'other'];
 
-class Bad extends Error {} // a problem the agent can fix (bad input, AgentPay said no): reported back as a tool error
+class Bad extends Error {} // a problem the agent can fix (bad input, CardBuddy said no): reported back as a tool error
 
 async function api(path, body) {
   let res;
   try {
     res = await fetch(BASE + path, body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {});
   } catch {
-    throw new Bad(`AgentPay isn't running at ${BASE}. Start it with npm start in the pointmaxx-agentpay folder.`);
+    throw new Bad(`CardBuddy isn't running at ${BASE}. Start it with npm start in the pointmaxx-agentpay folder.`);
   }
   const j = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Bad(j.error || `AgentPay answered HTTP ${res.status}.`);
+  if (!res.ok) throw new Bad(j.error || `CardBuddy answered HTTP ${res.status}.`);
   return j;
 }
 
 // The purchase fields every paying tool takes.
 const PURCHASE = {
   amount: { type: 'number', minimum: 0.01, maximum: 10000, description: 'Total in US dollars, including tax and shipping.' },
-  site: { type: 'string', maxLength: 200, description: 'The store\'s website, e.g. "wholefoodsmarket.com". AgentPay knows the category of thousands of stores.' },
+  site: { type: 'string', maxLength: 200, description: 'The store\'s website, e.g. "wholefoodsmarket.com". CardBuddy knows the category of thousands of stores.' },
   merchant: { type: 'string', maxLength: 200, description: 'The store\'s name, when there is no website.' },
-  category: { type: 'string', enum: CATS, description: 'The spending category. Needed when the store is not one AgentPay knows.' },
+  category: { type: 'string', enum: CATS, description: 'The spending category. Needed when the store is not one CardBuddy knows.' },
   description: { type: 'string', maxLength: 120, description: 'What is being bought, in a few words. Shown to the person on the receipt and in approvals.' }
 };
 function purchase(a) {
@@ -43,7 +43,7 @@ const TOOLS = [
   },
   {
     name: 'recommend_card',
-    description: 'Which card AgentPay would pay a purchase with, how much it earns and why, compared with the person\'s default card. Does not pay or check the spending rules.',
+    description: 'Which card CardBuddy would pay a purchase with, how much it earns and why, compared with the person\'s default card. Does not pay or check the spending rules.',
     inputSchema: { type: 'object', additionalProperties: false, required: ['amount'], properties: PURCHASE },
     run: async a => {
       const r = await api('/api/recommend', purchase(a));
@@ -108,7 +108,7 @@ async function handle(msg) {
   const { id, method, params } = msg || {};
   const reply = result => id !== undefined && send({ jsonrpc: '2.0', id, result });
   const fail = (code, message) => id !== undefined && send({ jsonrpc: '2.0', id, error: { code, message } });
-  if (method === 'initialize') return reply({ protocolVersion: VERSIONS.includes(params?.protocolVersion) ? params.protocolVersion : VERSIONS[0], capabilities: { tools: {} }, serverInfo: { name: 'agentpay', version: VERSION } });
+  if (method === 'initialize') return reply({ protocolVersion: VERSIONS.includes(params?.protocolVersion) ? params.protocolVersion : VERSIONS[0], capabilities: { tools: {} }, serverInfo: { name: 'cardbuddy', version: VERSION } });
   if (method === 'ping') return reply({});
   if (method === 'tools/list') return reply({ tools: LIST });
   if (method === 'tools/call') {
@@ -125,8 +125,8 @@ async function handle(msg) {
       return reply({ content: [{ type: 'text', text: JSON.stringify(out, null, 2) }], structuredContent: out });
     } catch (e) {
       if (e instanceof Bad) return reply({ content: [{ type: 'text', text: e.message }], isError: true });
-      process.stderr.write('agentpay-mcp: ' + (e && e.stack || e) + '\n'); // the host's log, never the agent
-      return reply({ content: [{ type: 'text', text: 'AgentPay hit an internal error.' }], isError: true });
+      process.stderr.write('cardbuddy-mcp: ' + (e && e.stack || e) + '\n'); // the host's log, never the agent
+      return reply({ content: [{ type: 'text', text: 'CardBuddy hit an internal error.' }], isError: true });
     }
   }
   if (typeof method === 'string' && method.startsWith('notifications/')) return;
@@ -139,7 +139,7 @@ function onLine(line) {
   if (!line.trim()) return;
   let msg; try { msg = JSON.parse(line); } catch { return send({ jsonrpc: '2.0', id: null, error: { code: -32700, message: 'Parse error' } }); }
   if (!msg || typeof msg !== 'object' || Array.isArray(msg)) return send({ jsonrpc: '2.0', id: null, error: { code: -32600, message: 'Invalid Request' } });
-  handle(msg).catch(e => process.stderr.write('agentpay-mcp: ' + (e && e.stack || e) + '\n')); // one bad message never stops the server
+  handle(msg).catch(e => process.stderr.write('cardbuddy-mcp: ' + (e && e.stack || e) + '\n')); // one bad message never stops the server
 }
 process.stdin.setEncoding('utf8');
 process.stdin.on('data', chunk => {

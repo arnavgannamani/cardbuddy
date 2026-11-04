@@ -6,7 +6,7 @@
 //   paypal  paid with the PayPal wallet, funded by that card; the statement reads "PAYPAL *MERCHANT", so PayPal-checkout
 //           bonuses apply (the PayPal Cashback Mastercard's 3%).
 //   venmo   paid with Venmo; the Venmo Credit Card's 3% on Venmo checkout applies.
-// AgentPay pays on the card rail today. The other rails are scored so the receipt can say when they'd earn more.
+// CardBuddy pays on the card rail today. The other rails are scored so the receipt can say when they'd earn more.
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
@@ -34,9 +34,9 @@ export function storeFor({ merchant, site, category } = {}) {
     host = site.trim().toLowerCase().replace(/^https?:\/\//, '').split(/[/?#]/)[0];
     const key = globalThis.PointMaxxStore(STORES, host);
     if (key) return { name: STORES[key][0], cat: STORES[key][1], site: key, warn: STORES[key][2] || null, guess: null };
-    if (merchant == null) merchant = host; // a site AgentPay doesn't know: its address stands in for the store's name
+    if (merchant == null) merchant = host; // a site CardBuddy doesn't know: its address stands in for the store's name
   }
-  if (!CATEGORIES.includes(category)) throw new Bad((host ? `AgentPay doesn't know ${host}. ` : '') + 'Give a known site, or a category: ' + CATEGORIES.join(', ') + '.');
+  if (!CATEGORIES.includes(category)) throw new Bad((host ? `CardBuddy doesn't know ${host}. ` : '') + 'Give a known site, or a category: ' + CATEGORIES.join(', ') + '.');
   if (typeof merchant !== 'string' || !merchant.trim() || merchant.length > 100) throw new Bad('merchant must be a name of up to 100 characters.');
   const name = merchant.trim().toUpperCase(), info = E.categoryInfo({ desc: name, key: E.merchantKey(name) });
   // Only a sure reading counts: a keyword rule, or the name model at its confidence threshold.
@@ -45,7 +45,7 @@ export function storeFor({ merchant, site, category } = {}) {
 }
 
 // wallet: [{ vaultId, cardId, ... }]. Returns every (rail, card) option sorted by percent back, the best card-rail
-// option (what AgentPay pays with), and what the wallet's default card would earn.
+// option (what CardBuddy pays with), and what the wallet's default card would earn.
 export function choose(wallet, purchase, date = new Date()) {
   if (!Array.isArray(wallet) || !wallet.length) throw new Bad('The wallet is empty. Connect a card first.');
   const store = storeFor(purchase), owned = [...new Set(wallet.map(w => w.cardId))];

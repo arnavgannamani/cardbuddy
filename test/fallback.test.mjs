@@ -2,7 +2,7 @@
 // Run: node test/fallback.test.mjs
 import assert from 'node:assert/strict';
 import { choose, Bad } from '../src/choose.mjs';
-import { chargeInOrder } from '../src/agentpay.mjs';
+import { chargeInOrder } from '../src/cardbuddy.mjs';
 
 const wallet = [
   { vaultId: 'v-dc', cardId: 'double-cash', isDefault: true },

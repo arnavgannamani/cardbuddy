@@ -24,7 +24,7 @@ async function api(method, path, body) {
   const out = r.status === 204 ? {} : await r.json().catch(() => ({}));
   if (!r.ok) {
     // The token carries the app's permissions as they were when it was issued: drop it so a fix on
-    // developer.paypal.com takes effect on the next request, without restarting AgentPay.
+    // developer.paypal.com takes effect on the next request, without restarting CardBuddy.
     if (r.status === 401 || r.status === 403) token = null;
     if (r.status === 403) throw new Bad('PayPal says this sandbox app isn\'t allowed to do that (HTTP 403 NOT_AUTHORIZED). In the app\'s Features on developer.paypal.com, turn on Save payment methods and Advanced Credit and Debit Card Payments and save. If they\'re already on, create a new US sandbox business account and a new Merchant app on it, and put its keys in .env (see the README).');
     const detail = (out.details || []).map(d => d.issue + (d.description ? ': ' + d.description : '')).join('; ');
@@ -36,7 +36,7 @@ async function api(method, path, body) {
 // Saving a card without a purchase (Vault API v3): a setup token for PayPal's card fields to fill in the browser, then a
 // payment token made from it. The card number only ever goes from the browser to PayPal.
 export async function createSetupToken() {
-  const r = await api('POST', '/v3/vault/setup-tokens', { payment_source: { card: { experience_context: { brand_name: 'AgentPay' } } } });
+  const r = await api('POST', '/v3/vault/setup-tokens', { payment_source: { card: { experience_context: { brand_name: 'CardBuddy' } } } });
   return { id: r.id, status: r.status };
 }
 export async function createPaymentToken(setupTokenId) {
@@ -56,7 +56,7 @@ export async function deletePaymentToken(vaultId) {
 export async function payWithVaultedCard({ vaultId, amount, description, invoiceId }) {
   const order = await api('POST', '/v2/checkout/orders', {
     intent: 'CAPTURE',
-    purchase_units: [{ description: String(description || 'AgentPay purchase').slice(0, 127), invoice_id: invoiceId, amount: { currency_code: 'USD', value: amount.toFixed(2) } }],
+    purchase_units: [{ description: String(description || 'CardBuddy purchase').slice(0, 127), invoice_id: invoiceId, amount: { currency_code: 'USD', value: amount.toFixed(2) } }],
     payment_source: { card: { vault_id: vaultId, stored_credential: { payment_initiator: 'MERCHANT', payment_type: 'UNSCHEDULED', usage: 'SUBSEQUENT' } } }
   });
   // Some orders made with a vault ID come back already captured; otherwise capture now.

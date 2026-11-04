@@ -1,4 +1,4 @@
-// The agent's MCP server end to end, with no PayPal calls: starts AgentPay in dry-run mode on a throwaway wallet,
+// The agent's MCP server end to end, with no PayPal calls: starts CardBuddy in dry-run mode on a throwaway wallet,
 // then talks to mcp/server.mjs the way an agent's host does (JSON-RPC lines on stdin/stdout).
 // Run: node test/mcp.test.mjs
 import assert from 'node:assert/strict';
@@ -9,19 +9,19 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
-const DATA = fs.mkdtempSync(path.join(os.tmpdir(), 'agentpay-test-'));
+const DATA = fs.mkdtempSync(path.join(os.tmpdir(), 'cardbuddy-test-'));
 const PORT = 4390 + Math.floor(Math.random() * 9);
 fs.writeFileSync(path.join(DATA, 'wallet.json'), JSON.stringify([
   { vaultId: 'test-dc', cardId: 'double-cash', card: 'Citi Double Cash', brand: 'MASTERCARD', last4: '0011', isDefault: true },
   { vaultId: 'test-gold', cardId: 'amex-gold', card: 'Amex Gold', brand: 'VISA', last4: '0026', isDefault: false },
   { vaultId: 'test-bcp', cardId: 'bcp', card: 'Amex Blue Cash Preferred', brand: 'VISA', last4: '1881', isDefault: false }
 ]));
-// A payment cut off by a crash last year: on start, AgentPay marks it unknown instead of leaving it "processing".
+// A payment cut off by a crash last year: on start, CardBuddy marks it unknown instead of leaving it "processing".
 fs.writeFileSync(path.join(DATA, 'receipts.json'), JSON.stringify([
   { id: 'cut-off', status: 'processing', at: new Date(Date.now() - 400 * 864e5).toISOString(), merchant: 'WHOLE FOODS MARKET', description: 'cut off', amount: 12, card: 'Amex Blue Cash Preferred', percentBack: 6, earned: 0.72, defaultCard: 'Citi Double Cash', defaultEarned: 0.24, attempts: [], declined: [] }
 ]));
 // GMAIL_USER set but empty: it wins over .env, so a test never emails anyone.
-const env = { ...process.env, PORT: String(PORT), AGENTPAY_DRY_RUN: '1', AGENTPAY_DATA: DATA, AGENTPAY_URL: 'http://localhost:' + PORT, GMAIL_USER: '', GMAIL_APP_PASSWORD: '' };
+const env = { ...process.env, PORT: String(PORT), CARDBUDDY_DRY_RUN: '1', CARDBUDDY_DATA: DATA, CARDBUDDY_URL: 'http://localhost:' + PORT, GMAIL_USER: '', GMAIL_APP_PASSWORD: '' };
 
 const server = spawn(process.execPath, [path.join(ROOT, 'server.mjs')], { env, stdio: ['ignore', 'pipe', 'inherit'] });
 await new Promise((ok, no) => { server.stdout.on('data', d => String(d).includes('running') && ok()); server.on('exit', no); });
@@ -37,11 +37,11 @@ mcp.stdout.on('data', d => {
 const rpc = (method, params) => new Promise(ok => { const id = next++; waiting.set(id, ok); mcp.stdin.write(JSON.stringify({ jsonrpc: '2.0', id, method, params }) + '\n'); });
 const call = async (name, args) => { const r = (await rpc('tools/call', { name, arguments: args })).result; return r.isError ? { error: r.content[0].text } : r.structuredContent; };
 // The person, from the approvals page (the browser sends its Origin). Without it, approve is refused.
-const post = (p, body, headers = { Origin: env.AGENTPAY_URL }) => fetch(env.AGENTPAY_URL + p, { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, body: JSON.stringify(body) });
+const post = (p, body, headers = { Origin: env.CARDBUDDY_URL }) => fetch(env.CARDBUDDY_URL + p, { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, body: JSON.stringify(body) });
 
 try {
   const init = (await rpc('initialize', { protocolVersion: '2025-06-18' })).result;
-  assert.equal(init.serverInfo.name, 'agentpay');
+  assert.equal(init.serverInfo.name, 'cardbuddy');
   const tools = (await rpc('tools/list')).result.tools.map(t => t.name);
   assert.deepEqual(tools, ['get_wallet', 'recommend_card', 'pay', 'purchase_status', 'list_receipts', 'spending_rules']);
   console.log('  tools:', tools.join(', '));

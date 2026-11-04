@@ -26,8 +26,8 @@
     "pointValues": {
       "amex-gold": "Membership Rewards valued at 1.5 cents per point (the engine's value); a 1-cent sensitivity is reported"
     },
-    "fees": "The wallet is the same with and without AgentPay, so annual fees and card credits (e.g. Amex Gold Uber Cash) do not change the gap and are left out.",
-    "rail": "Headline uses the card rail only (how AgentPay pays today). PayPal/Venmo rails are reported separately.",
+    "fees": "The wallet is the same with and without CardBuddy, so annual fees and card credits (e.g. Amex Gold Uber Cash) do not change the gap and are left out.",
+    "rail": "Headline uses the card rail only (how CardBuddy pays today). PayPal/Venmo rails are reported separately.",
     "caps": "Category caps tracked across the year; past a cap the card earns the cap's after rate.",
     "mistakesExcludedFromRewards": true,
     "policy": {
@@ -409,8 +409,8 @@
         "site": "wholefoodsmarket.com",
         "amount": 96.12,
         "category": "groceries",
-        "withoutAgentPay": "went through",
-        "withAgentPay": "held for approval",
+        "withoutCardBuddy": "went through",
+        "withCardBuddy": "held for approval",
         "reasons": [
           "$96.12 was already paid at WHOLE FOODS MARKET in the last 24 hours"
         ]
@@ -423,8 +423,8 @@
         "site": "bestbuy.com",
         "amount": 1249,
         "category": "online",
-        "withoutAgentPay": "went through",
-        "withAgentPay": "held for approval",
+        "withoutCardBuddy": "went through",
+        "withCardBuddy": "held for approval",
         "reasons": [
           "$1,249.00 is over the $100.00 per-purchase limit"
         ]
@@ -437,8 +437,8 @@
         "site": "delta.com",
         "amount": 612,
         "category": "travel",
-        "withoutAgentPay": "went through",
-        "withAgentPay": "held for approval",
+        "withoutCardBuddy": "went through",
+        "withCardBuddy": "held for approval",
         "reasons": [
           "$612.00 is over the $100.00 per-purchase limit",
           "travel purchases always need your approval"
@@ -447,8 +447,8 @@
     ],
     "mistakeTotal": 1957.12,
     "wentOutWithoutHumanCheck": {
-      "withoutAgentPay": 1957.12,
-      "withAgentPay": 0
+      "withoutCardBuddy": 1957.12,
+      "withCardBuddy": 0
     },
     "legitimatePurchasesHeld": {
       "count": 70,
@@ -479,15 +479,15 @@
       "mistakes": [
         {
           "key": "duplicate",
-          "withAgentPay": "held for approval"
+          "withCardBuddy": "held for approval"
         },
         {
           "key": "tv",
-          "withAgentPay": "held for approval"
+          "withCardBuddy": "held for approval"
         },
         {
           "key": "flight",
-          "withAgentPay": "held for approval"
+          "withCardBuddy": "held for approval"
         }
       ],
       "legitHeld": 13

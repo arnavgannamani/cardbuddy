@@ -9,7 +9,7 @@ that PayPal's developer platform and an AI tool are both central.
 
 - **PayPal is the core, not an add-on:** PayPal Vault for the wallet, the Orders API for every payment, PayPal and Venmo
   checkout bonuses in the card choice, and PayPal approval for anything outside the policy.
-- **AI is the user:** an agent (Claude, over MCP) does the shopping; AgentPay is what makes that safe and smart.
+- **AI is the user:** an agent (Claude, over MCP) does the shopping; CardBuddy is what makes that safe and smart.
 - **It targets the "Best Use of Agentic Commerce" prize head-on,** and fills two real gaps in agent payments: agents
   pay with the default card, and payment tools have no built-in confirmation step.
 - **A clear, measurable story for the video:** "your agent earned $X more", with real card math from an engine that
@@ -18,7 +18,7 @@ that PayPal's developer platform and an AI tool are both central.
 ## Architecture
 
 ```
-Claude / any MCP agent ──► agentpay-mcp ──► policy check ──► card choice (PointMaxx engine)
+Claude / any MCP agent ──► cardbuddy-mcp ──► policy check ──► card choice (PointMaxx engine)
                                                     │                   │
                                        needs approval?            vault token
                                                     ▼                   ▼
@@ -71,7 +71,7 @@ Answered: unattended charges work in the sandbox (question 1); the person names 
 
 ## What the official rules require (read Nov 3)
 
-- **Existing work is allowed** if the project was new or significantly updated after Oct 1. AgentPay is a new repo built
+- **Existing work is allowed** if the project was new or significantly updated after Oct 1. CardBuddy is a new repo built
   in the window; the PointMaxx engine and card data existed before. Say so in the write-up.
 - **Solely owned by the entrant.** Enter as a Team (Arnav and Mihir). If PointMaxx moves into the LLC before submitting,
   enter as the LLC instead, or move it after Nov 12.
@@ -81,7 +81,7 @@ Answered: unattended charges work in the sandbox (question 1); the person names 
   and store logos and card art; card and store names as plain text are a grey area (consider asking Devpost in writing).
 - **Judging**: a pass/fail check that PayPal and AI are central, then five equal criteria: technical implementation,
   design, potential impact, innovation, presentation. Judging may be partly AI-assisted, so the README matters.
-- We build for the product, not for prizes: a sponsor tool goes in only if it makes AgentPay better for the person
+- We build for the product, not for prizes: a sponsor tool goes in only if it makes CardBuddy better for the person
   using it.
 
 ## What "works great" means

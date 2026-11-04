@@ -5,24 +5,24 @@
   var root = document.documentElement;
   root.classList.add('wait');
   var shown = false;
-  window.agentpayReady = function () { if (!shown) { shown = true; root.classList.remove('wait'); } };
-  setTimeout(window.agentpayReady, 400);
+  window.cardbuddyReady = function () { if (!shown) { shown = true; root.classList.remove('wait'); } };
+  setTimeout(window.cardbuddyReady, 400);
 
   function set(n) {
     var badge = document.getElementById('pendingCount');
     if (!badge) return;
     badge.textContent = n ? String(n) : '';
     badge.title = n + ' waiting';
-    try { sessionStorage.setItem('agentpay.pending', String(n)); } catch (e) { /* storage blocked: the fetch still fills it */ }
+    try { sessionStorage.setItem('cardbuddy.pending', String(n)); } catch (e) { /* storage blocked: the fetch still fills it */ }
   }
   function refresh() {
     fetch('/api/pending').then(function (r) { return r.ok ? r.json() : []; })
       .then(function (list) { set(list.length); })
       .catch(function () {});
   }
-  window.agentpayRefreshCount = refresh;
+  window.cardbuddyRefreshCount = refresh;
   document.addEventListener('DOMContentLoaded', function () {
-    try { var last = Number(sessionStorage.getItem('agentpay.pending')); if (last) set(last); } catch (e) { /* ignore */ }
+    try { var last = Number(sessionStorage.getItem('cardbuddy.pending')); if (last) set(last); } catch (e) { /* ignore */ }
     refresh();
   });
 })();

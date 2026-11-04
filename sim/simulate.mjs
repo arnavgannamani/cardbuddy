@@ -1,6 +1,6 @@
 // A year of purchases made by an AI shopping agent, paid two ways:
-//   without AgentPay: every purchase on the wallet's default card, no spending rules;
-//   with AgentPay:    the best card per purchase (src/choose.mjs) and the spending policy (src/policy.mjs).
+//   without CardBuddy: every purchase on the wallet's default card, no spending rules;
+//   with CardBuddy:    the best card per purchase (src/choose.mjs) and the spending policy (src/policy.mjs).
 // No PayPal calls, no server, no data/ files: card choice and policy only. Deterministic (fixed seed).
 // Run: node sim/simulate.mjs   -> writes sim/results.json and web/simulation.json
 import fs from 'node:fs';
@@ -112,7 +112,7 @@ function runWallet({ wallet, extraDefault = null, scale = null, rails = ['card']
     const anyRail = opts.filter(o => rails.includes(o.rail))[0];
     const def = extraDefault ? extraDefault : (() => { const d = onCard.find(o => o.cardId === (wallet.find(w => w.isDefault) || wallet[0]).cardId); return d; })();
     const defPct = extraDefault ? extraDefault.percentBack : caps.effective(def, c.category, p.amount);
-    caps.spend(best, c.category, p.amount); // AgentPay's card-rail pick is what gets charged
+    caps.spend(best, c.category, p.amount); // CardBuddy's card-rail pick is what gets charged
     return {
       id: p.id, date: p.date.toISOString().slice(0, 10), site: p.site, store: c.store, what: p.what, category: c.category, categoryLabel: c.categoryLabel,
       amount: p.amount, warning: c.warning,
@@ -185,7 +185,7 @@ function runPolicy(policy) {
   const reasonCount = {};
   for (const l of legitHeld) for (const r of l.reasons) { const k = /last hour/.test(r) ? 'split at the same store' : /per-purchase/.test(r) ? 'per-purchase limit' : /budget/.test(r) ? 'monthly budget' : /always need/.test(r) ? 'travel category' : 'repeat at the same store'; reasonCount[k] = (reasonCount[k] || 0) + 1; }
   return {
-    mistakes: MISTAKES.map(m => { const l = log.find(x => x.mistake === m.key); return { key: m.key, label: m.label, story: m.story, date: l.date, site: m.site, amount: m.amount, category: l.category, withoutAgentPay: 'went through', withAgentPay: l.held ? 'held for approval' : 'went through', reasons: l.reasons }; }),
+    mistakes: MISTAKES.map(m => { const l = log.find(x => x.mistake === m.key); return { key: m.key, label: m.label, story: m.story, date: l.date, site: m.site, amount: m.amount, category: l.category, withoutCardBuddy: 'went through', withCardBuddy: l.held ? 'held for approval' : 'went through', reasons: l.reasons }; }),
     legitHeld: legitHeld.length, legitHeldSpend: r2(legitHeld.reduce((s, l) => s + l.amount, 0)), legitHeldByReason: reasonCount,
     legitHeldByCategory: legitHeld.reduce((o, l) => (o[l.category] = (o[l.category] || 0) + 1, o), {})
   };
@@ -193,7 +193,7 @@ function runPolicy(policy) {
 const policyRun = runPolicy(POLICY);
 const policy200 = runPolicy({ ...POLICY, perPurchase: 200 });
 const mistakeTotal = r2(MISTAKES.reduce((s, m) => s + m.amount, 0));
-const slipped = policyRun.mistakes.filter(m => m.withAgentPay === 'went through');
+const slipped = policyRun.mistakes.filter(m => m.withCardBuddy === 'went through');
 const groceryUnder100 = purchases.filter(p => p.what === 'Groceries' && p.amount <= POLICY.perPurchase).length;
 const groceryCount = purchases.filter(p => p.what === 'Groceries').length;
 const legitSmall = purchases.filter(p => p.amount <= POLICY.perPurchase).length;
@@ -207,8 +207,8 @@ const results = {
   assumptions: {
     wallet: W3.map(w => ({ cardId: w.cardId, card: card(w.cardId).name, isDefault: !!w.isDefault, annualFee: card(w.cardId).fee })),
     pointValues: { 'amex-gold': `Membership Rewards valued at ${card('amex-gold').cpp} cents per point (the engine's value); a 1-cent sensitivity is reported` },
-    fees: 'The wallet is the same with and without AgentPay, so annual fees and card credits (e.g. Amex Gold Uber Cash) do not change the gap and are left out.',
-    rail: 'Headline uses the card rail only (how AgentPay pays today). PayPal/Venmo rails are reported separately.',
+    fees: 'The wallet is the same with and without CardBuddy, so annual fees and card credits (e.g. Amex Gold Uber Cash) do not change the gap and are left out.',
+    rail: 'Headline uses the card rail only (how CardBuddy pays today). PayPal/Venmo rails are reported separately.',
     caps: 'Category caps tracked across the year; past a cap the card earns the cap\'s after rate.',
     mistakesExcludedFromRewards: true,
     policy: POLICY, avgMonthlySpend: avgMonth, monthlySpend: monthly,
@@ -224,10 +224,10 @@ const results = {
   },
   spendingRules: {
     policy: POLICY, mistakes: policyRun.mistakes, mistakeTotal,
-    wentOutWithoutHumanCheck: { withoutAgentPay: mistakeTotal, withAgentPay: r2(slipped.reduce((s, m) => s + m.amount, 0)) },
+    wentOutWithoutHumanCheck: { withoutCardBuddy: mistakeTotal, withCardBuddy: r2(slipped.reduce((s, m) => s + m.amount, 0)) },
     legitimatePurchasesHeld: { count: policyRun.legitHeld, of: purchases.length, spend: policyRun.legitHeldSpend, byReason: policyRun.legitHeldByReason, byCategory: policyRun.legitHeldByCategory },
     groceryOrdersUnderLimit: { count: groceryUnder100, of: groceryCount }, purchasesUnderLimit: { count: legitSmall, of: purchases.length },
-    perPurchase200: { label: 'Sensitivity: per-purchase limit $200', mistakes: policy200.mistakes.map(m => ({ key: m.key, withAgentPay: m.withAgentPay })), legitHeld: policy200.legitHeld }
+    perPurchase200: { label: 'Sensitivity: per-purchase limit $200', mistakes: policy200.mistakes.map(m => ({ key: m.key, withCardBuddy: m.withCardBuddy })), legitHeld: policy200.legitHeld }
   },
   estimate2030: { ...estimate, basis: "Morgan Stanley's $190B-$385B U.S. agentic e-commerce by 2030 x the simulated gap as % of spend. Illustration, not a forecast." },
   purchases: main.rows.map(r => ({ ...r, earnedWithout: r2(r.earnedWithout), earnedWith: r2(r.earnedWith) })),
@@ -249,8 +249,8 @@ console.log('Caps:', capCheck.map(c => `${c.card} ${c.category}: ${$(c.chargedAt
 const w = weak.totals; console.log(`1% default: without ${$(w.without)}, with ${$(w.with)}, gap ${$(w.gap)} (+${w.gapPctOfWithout}%, ${w.gapPctOfSpend.toFixed(2)}% of spend)`);
 const g = goldAtOneCent.totals; console.log(`Gold at 1.0c: with ${$(g.with)}, gap ${$(g.gap)} (+${g.gapPctOfWithout}%)`);
 console.log(`PayPal rail (4 cards): ${railRows.length} purchases, +${$(railExtra)} over best card; 3-card wallet other-rail wins: ${threeCardRail}`, Object.values(railByCat));
-console.log('Mistakes:', policyRun.mistakes.map(m => `${m.key} ${$(m.amount)}: ${m.withAgentPay}${m.reasons.length ? ' (' + m.reasons.join('; ') + ')' : ''}`).join(' | '));
+console.log('Mistakes:', policyRun.mistakes.map(m => `${m.key} ${$(m.amount)}: ${m.withCardBuddy}${m.reasons.length ? ' (' + m.reasons.join('; ') + ')' : ''}`).join(' | '));
 console.log(`Legit purchases held: ${policyRun.legitHeld} of ${purchases.length} (${$(policyRun.legitHeldSpend)})`, policyRun.legitHeldByReason, policyRun.legitHeldByCategory);
-console.log(`perPurchase 200: legit held ${policy200.legitHeld}`, policy200.mistakes.map(m => `${m.key}: ${m.withAgentPay}`).join(', '));
+console.log(`perPurchase 200: legit held ${policy200.legitHeld}`, policy200.mistakes.map(m => `${m.key}: ${m.withCardBuddy}`).join(', '));
 console.log(`2030: ${pct.toFixed(4)}% x $190B = ${$(estimate.low)}; x $385B = ${$(estimate.high)}`);
 console.log('Wrote sim/results.json and web/simulation.json');

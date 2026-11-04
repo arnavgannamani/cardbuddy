@@ -1,9 +1,9 @@
 {
   "mcpServers": {
-    "agentpay": {
+    "cardbuddy": {
       "command": "node",
       "args": ["mcp/server.mjs"],
-      "env": { "AGENTPAY_URL": "http://localhost:4242" }
+      "env": { "CARDBUDDY_URL": "http://localhost:4242" }
     }
   }
 }

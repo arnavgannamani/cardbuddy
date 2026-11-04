@@ -21,7 +21,7 @@ export function check(policy, receipts, purchase, now = new Date(), pending = []
   if (purchase.amount > policy.perPurchase) reasons.push(`${usd(purchase.amount)} is over the ${usd(policy.perPurchase)} per-purchase limit`);
   if (spent + purchase.amount > policy.monthlyBudget) reasons.push(`it would take this month to ${usd(spent + purchase.amount)}, over the ${usd(policy.monthlyBudget)} budget`);
   if (policy.approveCategories.includes(purchase.category)) reasons.push(`${purchase.category} purchases always need your approval`);
-  else if (policy.approveCategories.includes(purchase.guessedCategory)) reasons.push(`AgentPay reads ${purchase.store} as ${purchase.guessedCategory}, and ${purchase.guessedCategory} purchases always need your approval`);
+  else if (policy.approveCategories.includes(purchase.guessedCategory)) reasons.push(`CardBuddy reads ${purchase.store} as ${purchase.guessedCategory}, and ${purchase.guessedCategory} purchases always need your approval`);
   if (purchase.store) {
     const ago = r => now - new Date(r.at), here = receipts.filter(r => COUNTS.has(r.status) && r.merchant === purchase.store && ago(r) >= 0);
     // The same amount at the same store within a day: most likely the agent placing an order twice.

@@ -1,5 +1,5 @@
 // Shows sim/results.json (copied to web/simulation.json by `node sim/simulate.mjs`): the same year of agent purchases
-// paid with the default card versus AgentPay's pick, and what the spending rules did with the agent's mistakes.
+// paid with the default card versus CardBuddy's pick, and what the spending rules did with the agent's mistakes.
 (function () {
   'use strict';
   const $ = x => '$' + x.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -11,7 +11,7 @@
   function render(r) {
     const h = r.headline, sr = r.spendingRules, wallet = r.assumptions.wallet, def = wallet.find(w => w.isDefault).card;
     id('sub').textContent = `${h.purchases} purchases worth ${$0(h.spend)} over ${r.year}, made by one shopping agent holding ${wallet.length} cards: ` +
-      wallet.map(w => w.card).join(', ') + `. One run pays with the default card (${def}) every time; the other lets AgentPay choose and applies the spending rules.`;
+      wallet.map(w => w.card).join(', ') + `. One run pays with the default card (${def}) every time; the other lets CardBuddy choose and applies the spending rules.`;
 
     id('gap').textContent = '+' + $(h.gap);
     id('gapNote').textContent = `+${Math.round(h.gapPctOfWithout)}% over the default card`;
@@ -19,8 +19,8 @@
     id('withoutNote').textContent = `${h.effWithout.toFixed(2)}% back, all on ${def}`;
     id('with').textContent = $(h.with);
     id('withNote').textContent = `${h.effWith.toFixed(2)}% back, best card each time`;
-    id('mist').textContent = $(sr.wentOutWithoutHumanCheck.withAgentPay);
-    id('mistNote').textContent = `down from ${$(sr.wentOutWithoutHumanCheck.withoutAgentPay)} without rules`;
+    id('mist').textContent = $(sr.wentOutWithoutHumanCheck.withCardBuddy);
+    id('mistNote').textContent = `down from ${$(sr.wentOutWithoutHumanCheck.withoutCardBuddy)} without rules`;
 
     const cats = [...r.byCategory].sort((a, b) => b.gap - a.gap || b.with - a.with);
     const max = Math.max(...cats.map(c => c.with));
@@ -31,15 +31,15 @@
         el('td', {}, el('b', { textContent: c.label }), el('br'), el('small', { textContent: `${c.purchases} purchases` })),
         el('td', { className: 'r', textContent: $0(c.spend) }),
         el('td', {}, wins ? document.createTextNode(c.bestCards.join(', ')) : el('span', { className: 'muted', textContent: 'Default card' })),
-        el('td', {}, el('div', { className: 'pair' }, bar('without', w(c.without), 'Default card ' + $(c.without)), bar('with', w(c.with), 'AgentPay ' + $(c.with)))),
+        el('td', {}, el('div', { className: 'pair' }, bar('without', w(c.without), 'Default card ' + $(c.without)), bar('with', w(c.with), 'CardBuddy ' + $(c.with)))),
         el('td', { className: 'r muted', textContent: $(c.without) }),
         el('td', { className: 'r' }, wins ? el('b', { className: 'extra', textContent: $(c.with) }) : document.createTextNode($(c.with))));
     }));
 
     const p = sr.policy;
-    id('policy').textContent = `The rules: up to $${p.perPurchase} a purchase, $${p.monthlyBudget.toLocaleString('en-US')} a month, and ${p.approveCategories.join(', ')} always asks first. Without AgentPay nothing checks the agent.`;
+    id('policy').textContent = `The rules: up to $${p.perPurchase} a purchase, $${p.monthlyBudget.toLocaleString('en-US')} a month, and ${p.approveCategories.join(', ')} always asks first. Without CardBuddy nothing checks the agent.`;
     id('mistakes').replaceChildren(...sr.mistakes.map(m => {
-      const held = m.withAgentPay === 'held for approval';
+      const held = m.withCardBuddy === 'held for approval';
       return el('tr', {},
         el('td', {}, el('b', { textContent: m.label }), el('br'), el('small', { textContent: `${m.site}, ${new Date(m.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` + (m.reasons.length ? '. Held because ' + m.reasons.join('; ') : '') })),
         el('td', { className: 'r', textContent: $(m.amount) }),
@@ -62,8 +62,8 @@
       `if ${e.gapPctOfSpend}% of spend is left on the table, U.S. agent shopping in 2030 ($190B to $385B, Morgan Stanley) misses $${(e.low / 1e9).toFixed(1)}B to $${(e.high / 1e9).toFixed(1)}B in rewards a year. An illustration, not a forecast.`);
   }
 
-  fetch('/simulation.json').then(res => { if (!res.ok) throw new Error(res.status); return res.json(); }).then(render).finally(() => { if (window.agentpayReady) window.agentpayReady(); }).catch(() => {
-    id('sub').textContent = 'Couldn\'t load simulation.json. Run node sim/simulate.mjs, then open this page from the AgentPay server.';
+  fetch('/simulation.json').then(res => { if (!res.ok) throw new Error(res.status); return res.json(); }).then(render).finally(() => { if (window.cardbuddyReady) window.cardbuddyReady(); }).catch(() => {
+    id('sub').textContent = 'Couldn\'t load simulation.json. Run node sim/simulate.mjs, then open this page from the CardBuddy server.';
     id('catRows').replaceChildren(el('tr', {}, el('td', { colSpan: 6, className: 'empty', textContent: 'No simulation results yet.' })));
   });
 })();

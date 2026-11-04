@@ -12,7 +12,7 @@
   var FACES = ['#0a2366', '#1a5fdb', '#0c1322', '#3b5a99', '#5d6879']; // PointMaxx navy, blue and ink: drawn cards, never issuer art
   function brand(b) { b = String(b || 'Card').toLowerCase(); return b.charAt(0).toUpperCase() + b.slice(1); }
 
-  // For each category, the card AgentPay would pay a $100 purchase with, from the same engine the agent uses.
+  // For each category, the card CardBuddy would pay a $100 purchase with, from the same engine the agent uses.
   function routes(categories) {
     return Promise.all(categories.map(function (cat) {
       return api('/api/recommend', { amount: 100, merchant: cat, category: cat }).catch(function () { return null; });
@@ -38,7 +38,7 @@
       if (!w.length) {
         $('wallet').innerHTML = '<div class="pb"><p class="note">No cards yet. Add the cards you already carry; your agent can only pay with cards on this list.</p></div>';
         $('routes').innerHTML = '<tr><td colspan="4" class="empty">Add a card to see where it wins.</td></tr>';
-        if (window.agentpayReady) window.agentpayReady();
+        if (window.cardbuddyReady) window.cardbuddyReady();
         return;
       }
       api('/api/config').then(function (cfg) { return routes(cfg.categories || []); }).then(function (list) {
@@ -52,7 +52,7 @@
             (c.isDefault ? '<span class="pill">Default</span>' : '<button class="link" data-default="' + esc(c.vaultId) + '">Make default</button>') +
             '<button class="link" data-remove="' + esc(c.vaultId) + '" data-name="' + esc(c.card) + '">Remove</button></span></div>';
         }).join('');
-        showRoutes(list); if (window.agentpayReady) window.agentpayReady();
+        showRoutes(list); if (window.cardbuddyReady) window.cardbuddyReady();
       });
     }).catch(function (e) { say(e.message, true); });
   }
@@ -78,7 +78,7 @@
     s.src = 'https://www.paypal.com/sdk/js?client-id=' + encodeURIComponent(cfg.clientId) + '&components=card-fields';
     s.onerror = function () { say('PayPal didn\'t load. Check your connection.', true); };
     s.onload = function () {
-      var serverError = null; // AgentPay's own error (say, the PayPal app's permissions), not a problem with the card
+      var serverError = null; // CardBuddy's own error (say, the PayPal app's permissions), not a problem with the card
       var fields = window.paypal.CardFields({
         createVaultSetupToken: function () {
           serverError = null;

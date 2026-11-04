@@ -1,4 +1,4 @@
-// Step 1: does AgentPay pick the right card from a wallet? No PayPal calls. Run: node test/choose.test.mjs
+// Step 1: does CardBuddy pick the right card from a wallet? No PayPal calls. Run: node test/choose.test.mjs
 import assert from 'node:assert/strict';
 import { choose } from '../src/choose.mjs';
 import { check } from '../src/policy.mjs';

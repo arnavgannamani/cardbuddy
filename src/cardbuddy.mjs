@@ -1,4 +1,4 @@
-// What AgentPay does, shared by the web server (server.mjs) and the agent's MCP server (mcp/server.mjs): the wallet,
+// What CardBuddy does, shared by the web server (server.mjs) and the agent's MCP server (mcp/server.mjs): the wallet,
 // choosing a card, paying within the policy, approvals, and receipts.
 import { randomUUID } from 'node:crypto';
 import { choose, cardName, Bad } from './choose.mjs';
@@ -52,7 +52,7 @@ function parsePurchase(p = {}) {
   return { merchant: p.merchant, site: p.site, category: p.category, amount: money(amount), description: p.description || '' };
 }
 
-// The card AgentPay would use, and why, without paying.
+// The card CardBuddy would use, and why, without paying.
 export function recommend(p) {
   const purchase = parsePurchase(p), c = choose(load('wallet'), purchase);
   return { ...c, earns: money(purchase.amount * c.best.percentBack / 100), defaultEarns: money(purchase.amount * c.defaultCard.percentBack / 100) };
@@ -95,9 +95,9 @@ function receiptFrom(purchase, c, used, extra) {
   };
 }
 
-// AGENTPAY_DRY_RUN=1: everything runs (card choice, rules, fallback, receipts) but PayPal is never called, for tests
+// CARDBUDDY_DRY_RUN=1: everything runs (card choice, rules, fallback, receipts) but PayPal is never called, for tests
 // and demos. The receipt says it was a dry run.
-const dryRun = () => process.env.AGENTPAY_DRY_RUN === '1';
+const dryRun = () => process.env.CARDBUDDY_DRY_RUN === '1';
 async function dryRunPay() {
   return { orderId: 'DRYRUN-' + randomUUID().slice(0, 8).toUpperCase(), status: 'COMPLETED', captureStatus: 'COMPLETED', dryRun: true };
 }
@@ -132,7 +132,7 @@ function markUnknown(which, why) {
   return n;
 }
 // At startup: a payment still "processing" was cut off by a crash or restart, and PayPal may or may not have charged it.
-export const recoverInterrupted = () => markUnknown(() => true, 'AgentPay stopped before PayPal answered. Check PayPal before paying again.');
+export const recoverInterrupted = () => markUnknown(() => true, 'CardBuddy stopped before PayPal answered. Check PayPal before paying again.');
 
 // One payment at a time: parallel pay calls would each pass the budget check before any of their receipts is saved.
 // ponytail: one queue for the one server process; a lock per wallet if it ever serves several people.

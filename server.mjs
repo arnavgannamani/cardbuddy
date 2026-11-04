@@ -1,18 +1,18 @@
-// AgentPay's local server: the "connect your wallet" page (PayPal card fields), approvals, receipts, and the JSON API
+// CardBuddy's local server: the "connect your wallet" page (PayPal card fields), approvals, receipts, and the JSON API
 // they use. Listens on localhost only. Usage: node server.mjs   (reads .env; PORT defaults to 4242)
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import './src/env.mjs';
-import * as ap from './src/agentpay.mjs';
+import * as ap from './src/cardbuddy.mjs';
 import { holdable, CATEGORIES, E, Bad } from './src/choose.mjs';
 import { createSetupToken } from './src/paypal.mjs';
 import { alertsOn, alertsTo } from './src/notify.mjs';
 
 const WEB = path.join(path.dirname(fileURLToPath(import.meta.url)), 'web');
 const PORT = Number(process.env.PORT || 4242);
-if (process.argv.includes('--dry-run')) process.env.AGENTPAY_DRY_RUN = '1'; // npm run dry
+if (process.argv.includes('--dry-run')) process.env.CARDBUDDY_DRY_RUN = '1'; // npm run dry
 const PAGES = { '/': 'index.html', '/approvals': 'approvals.html', '/receipts': 'receipts.html', '/simulation': 'simulation.html' };
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.json': 'application/json; charset=utf-8', '.woff2': 'font/woff2' }; // the charset keeps send() from re-encoding a file as JSON
 
@@ -71,7 +71,7 @@ const server = http.createServer(async (req, res) => {
     catch (e) {
       if (e instanceof Bad) return send(400, { error: e.message });
       console.error(e);
-      return send(500, { error: 'AgentPay hit an internal error.' });
+      return send(500, { error: 'CardBuddy hit an internal error.' });
     }
   }
   const file = PAGES[url.pathname] || (/^\/(fonts\/)?[\w.-]+\.(js|css|svg|json|woff2)$/.test(url.pathname) ? url.pathname.slice(1) : null);
@@ -85,11 +85,11 @@ const server = http.createServer(async (req, res) => {
 });
 server.on('error', e => {
   if (e.code !== 'EADDRINUSE') throw e;
-  console.error(`Port ${PORT} is already in use, probably by AgentPay running in another terminal. Stop that one (Ctrl+C there) and start again.`);
+  console.error(`Port ${PORT} is already in use, probably by CardBuddy running in another terminal. Stop that one (Ctrl+C there) and start again.`);
   process.exit(1);
 });
 const cutOff = ap.recoverInterrupted();
-if (cutOff) console.log(`${cutOff} payment${cutOff > 1 ? 's were' : ' was'} cut off when AgentPay last stopped; marked unknown on Receipts. Check PayPal before paying again.`);
+if (cutOff) console.log(`${cutOff} payment${cutOff > 1 ? 's were' : ' was'} cut off when CardBuddy last stopped; marked unknown on Receipts. Check PayPal before paying again.`);
 console.log(alertsOn() ? `Hold alerts: emailed to ${alertsTo()} through Gmail.` : 'Hold alerts: off (add GMAIL_USER and GMAIL_APP_PASSWORD to .env to get an email when a purchase waits for you).');
 if (ap.seedDemoWallet()) console.log('Dry run with an empty wallet: added three demo cards (Citi Double Cash, Amex Gold, Blue Cash Preferred).');
-server.listen(PORT, '127.0.0.1', () => console.log('AgentPay running at http://localhost:' + PORT + (process.env.AGENTPAY_DRY_RUN === '1' ? ' (dry run: PayPal is never called)' : '')));
+server.listen(PORT, '127.0.0.1', () => console.log('CardBuddy running at http://localhost:' + PORT + (process.env.CARDBUDDY_DRY_RUN === '1' ? ' (dry run: PayPal is never called)' : '')));

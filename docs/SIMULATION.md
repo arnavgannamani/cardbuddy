@@ -1,15 +1,15 @@
-# Simulation: a year of agent purchases, with and without AgentPay
+# Simulation: a year of agent purchases, with and without CardBuddy
 
 Reproduce: `node sim/simulate.mjs` (fixed seed `20261112`, no PayPal calls, no server). Full output, including every
 purchase, is in [`sim/results.json`](../sim/results.json).
 
 ## Slide stats
 
-- **Same purchases, same three cards: AgentPay earned $450.99 more in a year than a default-card agent (+106%).**
+- **Same purchases, same three cards: CardBuddy earned $450.99 more in a year than a default-card agent (+106%).**
   $875.54 vs $424.55 on $21,227.56 of agent spending, against a 2%-everywhere default.
 - **If your default card is a typical 1% card, the gap is $621.88 (+293%).**
 - **Groceries and food delivery are most of the gain:** $238.16 + $153.21 = $391.37 of the $450.99 (86.8%).
-- **The agent's three mistakes would have spent $1,957.12 with no human check. AgentPay held all of it:** the $1,249 TV,
+- **The agent's three mistakes would have spent $1,957.12 with no human check. CardBuddy held all of it:** the $1,249 TV,
   the $612 wrong-date flight, and the $96.12 duplicate grocery order (same store and amount within 24 hours).
 - **Add the PayPal Cashback Mastercard and pay through PayPal on 86 of 329 purchases: another $82.77.**
 
@@ -19,11 +19,11 @@ purchase, is in [`sim/results.json`](../sim/results.json).
 |---|---|
 | Wallet | Citi Double Cash (default, 2% cash), Amex Gold (4x dining and groceries, 3x flights booked direct, 1x else), Amex Blue Cash Preferred (6% groceries up to $6,000/yr, 6% streaming, 3% transit). Three cards, close to the U.S. average of about 3.7 actively used cards. |
 | Purchases | 329 purchases, $21,227.56, all made by the agent on known store sites (`engine/stores.json`). Average month $1,768.96 (lowest $1,198, highest $2,462). |
-| Without AgentPay | Every purchase on the default card. No spending rules. |
-| With AgentPay | `choose()` from `src/choose.mjs` picks the best card-rail option per purchase; `check()` from `src/policy.mjs` applies the policy. |
+| Without CardBuddy | Every purchase on the default card. No spending rules. |
+| With CardBuddy | `choose()` from `src/choose.mjs` picks the best card-rail option per purchase; `check()` from `src/policy.mjs` applies the policy. |
 | Point value | Amex Membership Rewards at 1.5 cents (the engine's value), so 4x = 6%. A 1.0-cent sensitivity is below. |
-| Fees and credits | Left out: the wallet is the same with and without AgentPay, so annual fees and card credits don't change the gap. |
-| Rail | Headline is the card rail only (how AgentPay pays today). PayPal checkout is reported separately. |
+| Fees and credits | Left out: the wallet is the same with and without CardBuddy, so annual fees and card credits don't change the gap. |
+| Rail | Headline is the card rail only (how CardBuddy pays today). PayPal checkout is reported separately. |
 
 The year of purchases (per month unless noted, amounts drawn uniformly):
 
@@ -44,13 +44,13 @@ The year of purchases (per month unless noted, amounts drawn uniformly):
 
 | | Earned | Effective rate |
 |---|---|---|
-| Without AgentPay (default card) | $424.55 | 2.00% |
-| With AgentPay (best card) | $875.54 | 4.12% |
+| Without CardBuddy (default card) | $424.55 | 2.00% |
+| With CardBuddy (best card) | $875.54 | 4.12% |
 | **Gap** | **$450.99 (+106.23%)** | **2.12% of spend** |
 
 By category, sorted by gap:
 
-| Category | Purchases | Spend | Without | With | Gap | AgentPay's card |
+| Category | Purchases | Spend | Without | With | Gap | CardBuddy's card |
 |---|---:|---:|---:|---:|---:|---|
 | Groceries | 48 | $5,954.00 | $119.08 | $357.24 | $238.16 | Blue Cash Preferred 6% |
 | Dining (delivery) | 96 | $3,830.32 | $76.61 | $229.82 | $153.21 | Amex Gold 6% |
@@ -62,7 +62,7 @@ By category, sorted by gap:
 | **Total** | **329** | **$21,227.56** | **$424.55** | **$875.54** | **$450.99** | |
 
 **Caps.** Tracked across the year (past a cap, the card earns the cap's `after` rate). None is exceeded:
-Blue Cash Preferred groceries $5,954.00 of $6,000 (close: one more order would cross it, and AgentPay would then move
+Blue Cash Preferred groceries $5,954.00 of $6,000 (close: one more order would cross it, and CardBuddy would then move
 groceries to the Amex Gold, also 6% at 1.5 cents a point); Amex Gold dining $3,830.32 of $50,000; Amex Gold groceries
 $0 of $25,000. Checked with a five-orders-a-month variant that does cross the cap: the simulation switches to the Gold
 from that order on.
@@ -74,13 +74,13 @@ from that order on.
 
 | | Earned |
 |---|---|
-| Without AgentPay (1% default) | $212.28 |
-| With AgentPay (best of 1% card, Gold, Blue Cash Preferred) | $834.16 |
+| Without CardBuddy (1% default) | $212.28 |
+| With CardBuddy (best of 1% card, Gold, Blue Cash Preferred) | $834.16 |
 | **Gap** | **$621.88 (+292.96%, 2.93% of spend)** |
 
 ### Sensitivity: Amex Gold points at 1.0 cent instead of 1.5
 
-With AgentPay earns $781.78; the gap is **$357.23 (+84.14%, 1.68% of spend)**. Every card pick stays the same; the Gold's
+With CardBuddy earns $781.78; the gap is **$357.23 (+84.14%, 1.68% of spend)**. Every card pick stays the same; the Gold's
 dining rate falls from 6% to 4% and its flight rate from 4.5% to 3%.
 
 ### The other rail: PayPal checkout on a PayPal Cashback Mastercard
@@ -91,7 +91,7 @@ The 3-card wallet has no PayPal or Venmo card, so no other rail ever beats the b
 - On the card rail nothing changes (its 1.5% never beats the Double Cash's 2%): still $875.54.
 - Paying **through PayPal** with it beats the best card on **86 purchases** for **$82.77 more**: Amazon (48 purchases,
   +$24.96), online shopping (36, +$47.27) and the two hotel stays (+$10.53), each 3% instead of 2%.
-- Caveats: AgentPay pays on the card rail today, so this is what a receipt would flag, not money it earns yet; and it
+- Caveats: CardBuddy pays on the card rail today, so this is what a receipt would flag, not money it earns yet; and it
   assumes each of those merchants takes PayPal checkout.
 
 ## Spending rules: the agent's three mistakes
@@ -100,13 +100,13 @@ Policy: `perPurchase: 100`, **`monthlyBudget: 2500`** (the average simulated mon
 so $2,500 is the usual month plus headroom), `approveCategories: ['travel']`. In the simulation the person approves
 every legitimate purchase that's held and declines the mistakes.
 
-| Mistake (scripted) | Amount | Without AgentPay | With AgentPay | Why |
+| Mistake (scripted) | Amount | Without CardBuddy | With CardBuddy | Why |
 |---|---:|---|---|---|
 | (a) Same wholefoodsmarket.com order placed twice on Jan 4 | $96.12 | Went through | **Held for approval** | Same store and amount as a purchase paid in the last 24 hours |
 | (b) $1,249 TV ordered when asked for a "$150 TV mount" (bestbuy.com, Sep 14) | $1,249.00 | Went through | **Held for approval** | Over the $100 per-purchase limit |
 | (c) $612 flight booked on the wrong date (delta.com, May 20) | $612.00 | Went through | **Held for approval** | Over the per-purchase limit; travel always needs approval |
 
-- **Money that went out with no human check:** $1,957.12 without AgentPay; **$0 with AgentPay**.
+- **Money that went out with no human check:** $1,957.12 without CardBuddy; **$0 with CardBuddy**.
 - **Two store rules catch repeats and splits.** A purchase is held if the same amount was paid at the same store in the
   last 24 hours (that's what catches the duplicate), or if purchases at one store within an hour add up past the
   per-purchase limit (what stops an agent splitting a $300 order into three $100 ones).
@@ -161,4 +161,4 @@ wallets and mixes will differ. It's an illustration of scale, not a forecast.
 - Amex Gold's 3x on flights requires booking direct with the airline (delta.com, united.com are direct).
 - The agent's mistakes are left out of the rewards totals: they're money that shouldn't have been spent.
 - Caps: `choose()` scores one purchase as if no cap were used; the year-long cap tracking lives in the simulation. In
-  this year no cap is crossed, so it doesn't change the result, but the live AgentPay doesn't yet track cap usage.
+  this year no cap is crossed, so it doesn't change the result, but the live CardBuddy doesn't yet track cap usage.

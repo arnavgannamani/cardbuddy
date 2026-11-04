@@ -20,7 +20,7 @@ export function heldMessage(held, approveAt) {
   return {
     subject: `Your agent wants to spend ${usd(p.amount)} at ${store}`,
     text: [
-      `Your agent tried to buy ${what ? what + ' ' : ''}for ${usd(p.amount)} at ${store}. AgentPay is holding it for you: nothing has been charged.`,
+      `Your agent tried to buy ${what ? what + ' ' : ''}for ${usd(p.amount)} at ${store}. CardBuddy is holding it for you: nothing has been charged.`,
       '', 'Why it waited:', ...held.reasons.map(r => '- ' + cap(oneLine(r))), '',
       held.card ? `If you approve, it pays with ${oneLine(held.card)}: ${held.percentBack}% back (${usd(p.amount * held.percentBack / 100)}).` : 'No card in your wallet can pay this yet.',
       '', `Approve or decline: ${approveAt}`
@@ -63,14 +63,14 @@ export async function sendMail({ from, to, user, pass, subject, text }, connect 
   };
   try {
     await say('220');
-    await say('250', 'EHLO agentpay.localhost');
+    await say('250', 'EHLO cardbuddy.localhost');
     await say('235', 'AUTH PLAIN ' + Buffer.from('\0' + user + '\0' + pass).toString('base64'));
     await say('250', `MAIL FROM:<${from}>`);
     await say('250', `RCPT TO:<${to}>`);
     await say('354', 'DATA');
     // CRLF line ends, and a line starting with "." gets a second one so it can't end the message early.
     const body = text.replace(/\r?\n/g, '\r\n').replace(/^\./gm, '..');
-    await say('250', [`From: AgentPay <${from}>`, `To: <${to}>`, `Subject: ${header(oneLine(subject))}`, `Date: ${new Date().toUTCString()}`,
+    await say('250', [`From: CardBuddy <${from}>`, `To: <${to}>`, `Subject: ${header(oneLine(subject))}`, `Date: ${new Date().toUTCString()}`,
       'MIME-Version: 1.0', 'Content-Type: text/plain; charset=utf-8', 'Content-Transfer-Encoding: 8bit', '', body, '.'].join('\r\n'));
     await say('221', 'QUIT');
   } finally { sock.destroy(); }

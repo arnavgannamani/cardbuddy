@@ -32,9 +32,9 @@
           '<td class="r">' + (paid ? '<span class="' + (gain ? 'extra' : '') + '">' + money(r.earned) + '</span>' : '<small>–</small>') + '</td>' +
           '<td class="r"><span class="muted">' + (paid ? money(r.defaultEarned) : '–') + '</span></td></tr>';
       }).join('') || '<tr><td colspan="6" class="empty">No purchases yet. When your agent pays for something, it shows up here with the card it used.</td></tr>';
-      if (window.agentpayReady) window.agentpayReady();
+      if (window.cardbuddyReady) window.cardbuddyReady();
     }).catch(function () {
-      $('rows').innerHTML = '<tr><td colspan="6" class="empty">Couldn\'t reach AgentPay. Is the server running?</td></tr>';
+      $('rows').innerHTML = '<tr><td colspan="6" class="empty">Couldn\'t reach CardBuddy. Is the server running?</td></tr>';
     });
   }
   setInterval(show, 4000);
