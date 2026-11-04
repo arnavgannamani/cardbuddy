@@ -24,10 +24,12 @@
         var fell = r.declined && r.declined.length ? '<span class="fell">' + esc(r.declined.join(', ')) + (paid ? ' declined; this card paid instead' : ' declined') + '</span>' : '';
         var rail = r.betterRail ? '<small>Through ' + esc(r.betterRail.rail === 'paypal' ? 'PayPal' : 'Venmo') + ' the ' + esc(r.betterRail.card) + ' would earn ' + r.betterRail.percentBack + '%</small>' : '';
         var gain = paid && r.earned > r.defaultEarned;
+        // The PayPal order behind the payment, so anyone can match it in the sandbox. Dry runs never reach PayPal.
+        var order = r.dryRun ? '' : r.paypal && r.paypal.orderId ? '<small class="order">PayPal order <span class="num">' + esc(r.paypal.orderId) + '</span></small>' : '';
         return '<tr><td class="num">' + esc(when) + '</td>' +
           '<td><b>' + esc(r.description || r.merchant) + '</b>' + (r.dryRun ? '<span class="pill">Dry run</span>' : '') + (paid ? '' : '<span class="pill neg">' + (r.status === 'failed' ? 'Not paid' : esc(r.status)) + '</span>') +
           '<br><small>' + esc(r.site || r.merchant) + ' · ' + esc(labels[r.category] || r.category) + '</small></td>' +
-          '<td>' + esc(r.card) + '<br><small>' + r.percentBack + '% back, ' + esc(String(r.why).toLowerCase()) + '</small>' + fell + rail + '</td>' +
+          '<td>' + esc(r.card) + '<br><small>' + r.percentBack + '% back, ' + esc(String(r.why).toLowerCase()) + '</small>' + fell + rail + order + '</td>' +
           '<td class="r">' + money(r.amount) + '</td>' +
           '<td class="r">' + (paid ? '<span class="' + (gain ? 'extra' : '') + '">' + money(r.earned) + '</span>' : '<small>–</small>') + '</td>' +
           '<td class="r"><span class="muted">' + (paid ? money(r.defaultEarned) : '–') + '</span></td></tr>';

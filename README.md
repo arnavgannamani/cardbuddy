@@ -76,6 +76,9 @@ you what the agent tried, why it waited, and a link to the Approvals page.
 **No PayPal keys?** `npm run dry` runs everything except the PayPal calls, and starts with three demo cards so there's
 something to choose between. Receipts are marked as dry runs.
 
+**Start a clean history (before a demo):** `npm run reset` moves receipts, held purchases and declines into
+`data/archive/` and keeps your wallet and spending rules. It refuses while a payment's result is unknown.
+
 **Tests:** `npm test` (no PayPal calls).
 
 ### If something goes wrong
