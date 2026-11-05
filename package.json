@@ -11,6 +11,6 @@
     "dry": "node server.mjs --dry-run",
     "mcp": "node mcp/server.mjs",
     "reset": "node scripts/reset.mjs",
-    "test": "node test/choose.test.mjs && node test/fallback.test.mjs && node test/notify.test.mjs && node test/mcp.test.mjs && node test/shop.test.mjs"
+    "test": "node test/choose.test.mjs && node test/fallback.test.mjs && node test/notify.test.mjs && node test/mcp.test.mjs && node test/shop.test.mjs && node test/hosted.test.mjs"
   }
 }

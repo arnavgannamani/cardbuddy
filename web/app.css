@@ -90,7 +90,7 @@ button.link:hover { color: var(--text); background: none; text-decoration: under
 button:disabled { opacity: .45; cursor: default; }
 label { display: block; font-weight: 500; font-size: 13.5px; margin: 14px 0 6px; }
 label:first-child { margin-top: 0; }
-select, input[type=number], input[type=text] { width: 100%; font: inherit; height: 40px; padding: 0 12px; border: 1px solid var(--control); border-radius: var(--r-control); background: #fff; color: var(--text); }
+select, input[type=number], input[type=text], input[type=password] { width: 100%; font: inherit; height: 40px; padding: 0 12px; border: 1px solid var(--control); border-radius: var(--r-control); background: #fff; color: var(--text); }
 select:focus, input:focus { outline: 2px solid var(--data); outline-offset: -1px; }
 .check { display: flex; gap: 9px; align-items: flex-start; font-weight: 400; font-size: 13.5px; color: var(--muted); margin-top: 16px; }
 .check input { margin: 3px 0 0; }

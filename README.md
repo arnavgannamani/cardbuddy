@@ -106,7 +106,34 @@ it somewhere else). Restart; CardBuddy prints where alerts go.
 **Start a clean history:** `npm run reset` moves receipts, held purchases and declines into `data/archive/` and keeps
 your wallet and rules. It refuses while a payment's result is unknown.
 
-**Tests:** `npm test` runs the card choice, decline fallback, alert and end-to-end agent tests. None call PayPal.
+**Tests:** `npm test` runs the card choice, decline fallback, alert, end-to-end agent and hosted tests. None call PayPal.
+
+## Host it, so agents in other apps can connect
+
+Agents that run in the cloud (Muse, ChatGPT and claude.ai connectors, anything that takes an MCP server URL) can't reach
+your laptop. Hosted, CardBuddy serves the same eight tools at `https://<your host>/mcp` (MCP over Streamable HTTP), and
+the agent sends an API key. The pages sit behind a password, and the key opens only the agent's tools: it can't approve
+a purchase or change a rule. Still sandbox only.
+
+1. **Make a password and a key:** run `openssl rand -hex 16` twice.
+2. **Deploy** on any Node host. On [Render](https://render.com): New → Web Service → this repo, start command
+   `node server.mjs`, then these environment variables:
+
+   | Variable | Value |
+   |---|---|
+   | `CARDBUDDY_PUBLIC_URL` | The service's address, e.g. `https://cardbuddy.onrender.com` |
+   | `CARDBUDDY_PASSWORD` | The first one from step 1: what you type to open the pages (any username) |
+   | `CARDBUDDY_KEY` | The second one: the agent's API key |
+   | `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET` | The sandbox app's keys, or `CARDBUDDY_DRY_RUN=1` for no PayPal at all |
+   | `CARDBUDDY_WALLET` | Optional: the cards to start with, from `node -e "console.log(JSON.stringify(require('./data/wallet.json')))"` |
+
+   A free host's disk is wiped on every restart: the wallet comes back from `CARDBUDDY_WALLET`, receipts and held
+   purchases start empty. The vault tokens in it only work with the same PayPal app's keys.
+3. **Connect the agent** to `https://<your host>/mcp` with the header `Authorization: Bearer <CARDBUDDY_KEY>`.
+   Approvals and their email links go to `https://<your host>/approvals`.
+
+To try it from your own computer first, start CardBuddy with those variables and put a tunnel in front of it, e.g.
+`ngrok http 4242`, using the tunnel's address as `CARDBUDDY_PUBLIC_URL`.
 
 ## PayPal APIs used
 
@@ -163,7 +190,7 @@ recommender. CardBuddy uses them as a library to score cards.
   CardBuddy is the layer between that agent and the person's PayPal wallet: it picks the card that earns the most and
   enforces their rules, so they approve only what's unusual instead of every purchase. The demo store stands in for
   those merchants today.
-- A hosted connector so agents in other apps can use CardBuddy without running it locally.
+- Sign-in for each person (OAuth), so the hosted connector serves many wallets instead of one demo wallet.
 - Paying through PayPal and Venmo balances where their cards earn more, and the PointMaxx Chrome extension at PayPal
   checkout.
 

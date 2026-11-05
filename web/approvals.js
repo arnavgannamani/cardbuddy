@@ -8,12 +8,12 @@
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function money(x) { return '$' + Number(x).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
   function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
-  var labels = {};
+  var labels = {}, last = null;
 
   function show() {
     return api('/api/pending').then(function (list) {
       $('heldCount').textContent = list.length ? list.length + ' waiting' : '';
-      $('list').innerHTML = list.length ? list.map(function (p) {
+      var html = list.length ? list.map(function (p) {
         var what = p.purchase.description || p.purchase.merchant || p.purchase.site || 'Purchase';
         var where = [p.purchase.site || p.purchase.merchant, labels[p.purchase.category]].filter(Boolean).join(' · ');
         var when = new Date(p.at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
@@ -22,6 +22,8 @@
           '<div class="held-foot"><small>' + (p.card ? 'If approved: <b>' + esc(p.card) + '</b>, ' + p.percentBack + '% back (' + money(p.purchase.amount * p.percentBack / 100) + ')' : 'No card in your wallet can pay this. Add one on the Wallet page first.') + '</small>' +
           '<span class="acts"><button class="ghost" data-decline="' + esc(p.id) + '">Decline</button><button data-approve="' + esc(p.id) + '">Approve and pay</button></span></div></div>';
       }).join('') : '<div class="empty-state"><b>Nothing waiting</b><p>When your agent tries a purchase over your limits, or in a category you want to see first, it stops here instead of being charged.</p></div>';
+      // Only redrawn when something changed, so a check never resets a button mid-click.
+      if (html !== last) { $('list').innerHTML = html; last = html; }
       if (window.cardbuddyRefreshCount) window.cardbuddyRefreshCount();
       if (window.cardbuddyReady) window.cardbuddyReady();
     }).catch(function (e) { $('listMsg').textContent = e.message; });
@@ -38,6 +40,10 @@
       return policy;
     });
   }
+
+  // A purchase the agent holds while this page is open shows up by itself, and so does the month's spend.
+  // ponytail: a check every 3 seconds while the tab is visible; a push from the server if it ever matters.
+  setInterval(function () { if (!document.hidden) { show(); showMonth().catch(function () {}); } }, 3000);
 
   $('list').addEventListener('click', function (e) {
     var a = e.target.getAttribute('data-approve'), d = e.target.getAttribute('data-decline');

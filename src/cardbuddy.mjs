@@ -110,9 +110,12 @@ async function dryRunPay() {
   return { orderId: 'DRYRUN-' + randomUUID().slice(0, 8).toUpperCase(), status: 'COMPLETED', captureStatus: 'COMPLETED', dryRun: true };
 }
 
-// With no PayPal keys, dry run still needs cards to choose between: the same three the tests use, if the wallet is empty.
+// An empty wallet gets the cards in CARDBUDDY_WALLET (a hosted demo's disk starts empty on every restart). Otherwise,
+// with no PayPal keys, dry run still needs cards to choose between: the same three the tests use.
 export function seedDemoWallet() {
-  if (!dryRun() || load('wallet').length) return false;
+  if (load('wallet').length) return false;
+  if (process.env.CARDBUDDY_WALLET) { save('wallet', JSON.parse(process.env.CARDBUDDY_WALLET)); return 'env'; }
+  if (!dryRun()) return false;
   save('wallet', [
     { vaultId: 'demo-dc', cardId: 'double-cash', card: 'Citi Double Cash', brand: 'MASTERCARD', last4: '0011', isDefault: true },
     { vaultId: 'demo-gold', cardId: 'amex-gold', card: 'Amex Gold', brand: 'AMEX', last4: '0026', isDefault: false },
@@ -156,7 +159,7 @@ export const pay = oneAtATime(async function (p) {
     const held = { id: randomUUID(), at: new Date().toISOString(), purchase, store: c.store, card: c.best.card, percentBack: c.best.percentBack, reasons: verdict.reasons };
     pending.push(held);
     save('pending', pending);
-    const approveAt = 'http://localhost:' + (process.env.PORT || 4242) + '/approvals';
+    const approveAt = (process.env.CARDBUDDY_PUBLIC_URL || 'http://localhost:' + (process.env.PORT || 4242)).replace(/\/+$/, '') + '/approvals';
     // The email goes out in the background: a slow or failed alert never holds up or breaks the agent's answer.
     // ponytail: one email per hold; an agent that ignores "never retry" gets one per attempt.
     notifyHeld(held, approveAt).catch(e => console.error('Hold alert not sent: ' + e.message));

@@ -3,13 +3,20 @@
 // (server.mjs, CARDBUDDY_URL, default http://localhost:4242): the PayPal keys, the vault tokens and the spending rules
 // stay there, so the agent can see the rules but has no tool to change them, and nothing it sends can skip them.
 // ponytail: the MCP wire format is written out by hand (JSON-RPC lines on stdin/stdout), as in pointmaxx-mcp.
+// The hosted CardBuddy also serves these tools at /mcp (server.mjs): it imports handle() and calls its own routes.
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 const BASE = (process.env.CARDBUDDY_URL || 'http://localhost:4242').replace(/\/+$/, '');
 const VERSION = '0.1.0', VERSIONS = ['2025-06-18', '2025-03-26', '2024-11-05'];
 const CATS = ['dining', 'groceries', 'gas', 'travel', 'transit', 'streaming', 'entertainment', 'amazon', 'online', 'drugstore', 'utilities', 'other'];
 
-class Bad extends Error {} // a problem the agent can fix (bad input, CardBuddy said no): reported back as a tool error
+export class Bad extends Error {} // a problem the agent can fix (bad input, CardBuddy said no): reported back as a tool error
 
-async function api(path, body) {
+let api = httpApi;
+// server.mjs swaps in its own routes, so the hosted /mcp never goes back out over HTTP.
+export function useApi(fn) { api = fn; }
+
+async function httpApi(path, body) {
   let res;
   try {
     res = await fetch(BASE + path, body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {});
@@ -128,12 +135,11 @@ function receipt(r) {
 const RUN = Object.assign(Object.create(null), Object.fromEntries(TOOLS.map(t => [t.name, t])));
 const LIST = TOOLS.map(({ run, ...t }) => t);
 
-// ---------- MCP over stdio: one JSON-RPC message per line ----------
-const send = m => process.stdout.write(JSON.stringify(m) + '\n');
-async function handle(msg) {
+// One JSON-RPC message in, its response out (undefined for a notification, which gets none).
+export async function handle(msg) {
   const { id, method, params } = msg || {};
-  const reply = result => id !== undefined && send({ jsonrpc: '2.0', id, result });
-  const fail = (code, message) => id !== undefined && send({ jsonrpc: '2.0', id, error: { code, message } });
+  const reply = result => id !== undefined ? { jsonrpc: '2.0', id, result } : undefined;
+  const fail = (code, message) => id !== undefined ? { jsonrpc: '2.0', id, error: { code, message } } : undefined;
   if (method === 'initialize') return reply({ protocolVersion: VERSIONS.includes(params?.protocolVersion) ? params.protocolVersion : VERSIONS[0], capabilities: { tools: {} }, serverInfo: { name: 'cardbuddy', version: VERSION } });
   if (method === 'ping') return reply({});
   if (method === 'tools/list') return reply({ tools: LIST });
@@ -158,25 +164,30 @@ async function handle(msg) {
   if (typeof method === 'string' && method.startsWith('notifications/')) return;
   return fail(-32601, 'Method not found');
 }
-// Lines are split by hand so an endless line can't grow without bound: past 100 KB it's dropped until its newline.
-const MAX = 100000;
-let buf = '', skipping = false;
-function onLine(line) {
-  if (!line.trim()) return;
-  let msg; try { msg = JSON.parse(line); } catch { return send({ jsonrpc: '2.0', id: null, error: { code: -32700, message: 'Parse error' } }); }
-  if (!msg || typeof msg !== 'object' || Array.isArray(msg)) return send({ jsonrpc: '2.0', id: null, error: { code: -32600, message: 'Invalid Request' } });
-  handle(msg).catch(e => process.stderr.write('cardbuddy-mcp: ' + (e && e.stack || e) + '\n')); // one bad message never stops the server
+// ---------- MCP over stdio: one JSON-RPC message per line, when run directly (not imported by server.mjs) ----------
+const send = m => process.stdout.write(JSON.stringify(m) + '\n');
+if (process.argv[1] && fs.realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) stdio();
+function stdio() {
+  // Lines are split by hand so an endless line can't grow without bound: past 100 KB it's dropped until its newline.
+  const MAX = 100000;
+  let buf = '', skipping = false;
+  function onLine(line) {
+    if (!line.trim()) return;
+    let msg; try { msg = JSON.parse(line); } catch { return send({ jsonrpc: '2.0', id: null, error: { code: -32700, message: 'Parse error' } }); }
+    if (!msg || typeof msg !== 'object' || Array.isArray(msg)) return send({ jsonrpc: '2.0', id: null, error: { code: -32600, message: 'Invalid Request' } });
+    handle(msg).then(r => r && send(r)).catch(e => process.stderr.write('cardbuddy-mcp: ' + (e && e.stack || e) + '\n')); // one bad message never stops the server
+  }
+  process.stdin.setEncoding('utf8');
+  process.stdin.on('data', chunk => {
+    let i;
+    buf += chunk;
+    while ((i = buf.indexOf('\n')) >= 0) {
+      const line = buf.slice(0, i); buf = buf.slice(i + 1);
+      if (skipping) skipping = false; else onLine(line);
+    }
+    if (buf.length > MAX) {
+      if (!skipping) send({ jsonrpc: '2.0', id: null, error: { code: -32600, message: 'Message too large' } });
+      skipping = true; buf = '';
+    }
+  });
 }
-process.stdin.setEncoding('utf8');
-process.stdin.on('data', chunk => {
-  let i;
-  buf += chunk;
-  while ((i = buf.indexOf('\n')) >= 0) {
-    const line = buf.slice(0, i); buf = buf.slice(i + 1);
-    if (skipping) skipping = false; else onLine(line);
-  }
-  if (buf.length > MAX) {
-    if (!skipping) send({ jsonrpc: '2.0', id: null, error: { code: -32600, message: 'Message too large' } });
-    skipping = true; buf = '';
-  }
-});

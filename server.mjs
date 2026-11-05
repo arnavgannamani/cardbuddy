@@ -1,6 +1,8 @@
 // CardBuddy's local server: the "connect your wallet" page (PayPal card fields), approvals, receipts, and the JSON API
-// they use. Listens on localhost only. Usage: node server.mjs   (reads .env; PORT defaults to 4242)
+// they use. Listens on localhost only, unless hosted (CARDBUDDY_PUBLIC_URL): then the pages need the person's password
+// and agents connect to /mcp with an API key. Usage: node server.mjs   (reads .env; PORT defaults to 4242)
 import http from 'node:http';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -10,6 +12,7 @@ import { catalog, search } from './src/shop.mjs';
 import { holdable, CATEGORIES, E, Bad } from './src/choose.mjs';
 import { createSetupToken } from './src/paypal.mjs';
 import { alertsOn, alertsTo } from './src/notify.mjs';
+import * as mcp from './mcp/server.mjs';
 
 const WEB = path.join(path.dirname(fileURLToPath(import.meta.url)), 'web');
 const PORT = Number(process.env.PORT || 4242);
@@ -44,6 +47,37 @@ const ROUTES = {
 const AGENT_ROUTES = new Set(['POST /api/recommend', 'POST /api/pay', 'POST /api/purchase-status', 'POST /api/shop/search', 'POST /api/shop/checkout']);
 const HOSTS = ['localhost:' + PORT, '127.0.0.1:' + PORT], ORIGINS = HOSTS.map(h => 'http://' + h);
 
+// Hosted: the public address joins the allowed hosts. The pages and the person's API need CARDBUDDY_PASSWORD (the
+// sign-in page sets a cookie; curl can send it as Basic auth); agents get only the MCP tools at /mcp, with
+// CARDBUDDY_KEY, so the key can't approve.
+// ponytail: one shared wallet and one password for the whole demo; accounts per person if it ever serves real users.
+const PUBLIC = (process.env.CARDBUDDY_PUBLIC_URL || '').replace(/\/+$/, ''), PASSWORD = process.env.CARDBUDDY_PASSWORD || '', KEY = process.env.CARDBUDDY_KEY || '';
+if (PUBLIC) {
+  if (PASSWORD.length < 12 || KEY.length < 24) { console.error('Hosted CardBuddy (CARDBUDDY_PUBLIC_URL) needs CARDBUDDY_PASSWORD (12+ characters) and CARDBUDDY_KEY (24+), e.g. from: openssl rand -hex 16'); process.exit(1); }
+  HOSTS.push(new URL(PUBLIC).host); ORIGINS.push(new URL(PUBLIC).origin);
+}
+// Compared as hashes, so the time taken says nothing about how much of a guess was right.
+const same = (a, b) => crypto.timingSafeEqual(crypto.createHash('sha256').update(String(a)).digest(), crypto.createHash('sha256').update(b).digest());
+// ponytail: the cookie is a fixed HMAC of the password: changing the password signs everyone out; no per-session expiry.
+const SESSION = crypto.createHmac('sha256', PASSWORD).update('cardbuddy-session').digest('hex');
+const signedIn = req => {
+  const c = /(?:^|;\s*)cb=([0-9a-f]{64})/.exec(req.headers.cookie || ''), m = /^Basic (.+)$/.exec(req.headers.authorization || '');
+  return (!!c && same(c[1], SESSION)) || (!!m && same(Buffer.from(m[1], 'base64').toString().split(':').slice(1).join(':'), PASSWORD));
+};
+// What the sign-in page itself needs, open to anyone.
+const OPEN = /^\/(login|app\.css|mark\.svg|fonts\/[\w.-]+\.woff2)$/;
+const safeNext = n => /^\/[\w/-]*$/.test(n || '') && !n.startsWith('//') ? n : '/';
+const agentKey = req => { const m = /^Bearer (.+)$/.exec(req.headers.authorization || ''); return !!m && same(m[1], KEY); };
+
+// The MCP tools at /mcp call the routes here directly, and only the agent's ones.
+const AGENT_CAN = new Set([...AGENT_ROUTES, 'GET /api/wallet', 'GET /api/receipts', 'GET /api/policy']);
+mcp.useApi(async (p, body) => {
+  const key = (body ? 'POST ' : 'GET ') + p;
+  if (!AGENT_CAN.has(key)) throw new Error('Not an agent route: ' + key);
+  try { return JSON.parse(JSON.stringify(await ROUTES[key](body || {}))); } // the same copy an HTTP answer would be
+  catch (e) { throw e instanceof Bad ? new mcp.Bad(e.message) : e; }
+});
+
 function readBody(req) {
   return new Promise((resolve, reject) => {
     let s = '';
@@ -65,6 +99,31 @@ const server = http.createServer(async (req, res) => {
   };
   // Only requests addressed to localhost: a site that rebinds its own domain to 127.0.0.1 can't read the wallet.
   if (!HOSTS.includes(req.headers.host)) return send(403, { error: 'Wrong host.' });
+  // MCP over HTTP (Streamable HTTP, JSON answers only): one JSON-RPC message per POST.
+  if (url.pathname === '/mcp' && KEY) {
+    if (req.method !== 'POST') { res.setHeader('Allow', 'POST'); return send(405, { error: 'POST one JSON-RPC message.' }); }
+    if (req.headers.origin && !ORIGINS.includes(req.headers.origin)) return send(403, { error: 'Wrong origin.' });
+    if (!agentKey(req)) { res.setHeader('WWW-Authenticate', 'Bearer'); return send(401, { error: 'Send the CardBuddy API key as Authorization: Bearer <key>.' }); }
+    let msg; try { msg = await readBody(req); } catch (e) { return send(400, { jsonrpc: '2.0', id: null, error: { code: -32700, message: e.message } }); }
+    const out = await mcp.handle(msg).catch(e => { console.error(e); return { jsonrpc: '2.0', id: msg.id ?? null, error: { code: -32603, message: 'CardBuddy hit an internal error.' } }; });
+    return out ? send(200, out) : send(202, '', 'text/plain');
+  }
+  if (PUBLIC && url.pathname === '/login') {
+    if (req.method === 'POST') {
+      let s = ''; for await (const d of req) { s += d; if (s.length > 2000) return send(400, 'Too large.', 'text/plain'); }
+      const f = new URLSearchParams(s), next = safeNext(f.get('next'));
+      if (!same(f.get('password') || '', PASSWORD)) { res.writeHead(303, { Location: '/login?wrong=1&next=' + encodeURIComponent(next) }); return res.end(); }
+      res.writeHead(303, { Location: next, 'Set-Cookie': `cb=${SESSION}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=604800` });
+      return res.end();
+    }
+    const html = fs.readFileSync(path.join(WEB, 'login.html'), 'utf8').replace('__NEXT__', safeNext(url.searchParams.get('next')))
+      .replace('__WRONG__', url.searchParams.has('wrong') ? '<p class="wrong">That password isn\'t right.</p>' : '');
+    return send(200, html, TYPES['.html']);
+  }
+  if (PUBLIC && !OPEN.test(url.pathname) && !signedIn(req)) {
+    if (req.method === 'GET' && !url.pathname.startsWith('/api/')) { res.writeHead(303, { Location: '/login?next=' + encodeURIComponent(safeNext(url.pathname)) }); return res.end(); }
+    return send(401, { error: 'Sign in at /login first.' });
+  }
   if (ROUTES[key]) {
     // Only these pages may call the API: no other site can drive payments from a visitor's browser. The person's
     // routes also need the page's Origin, so a plain curl from the agent's shell can't approve its own purchase.
@@ -96,5 +155,8 @@ server.on('error', e => {
 const cutOff = ap.recoverInterrupted();
 if (cutOff) console.log(`${cutOff} payment${cutOff > 1 ? 's were' : ' was'} cut off when CardBuddy last stopped; marked unknown on Receipts. Check PayPal before paying again.`);
 console.log(alertsOn() ? `Hold alerts: emailed to ${alertsTo()} through Gmail.` : 'Hold alerts: off (add GMAIL_USER and GMAIL_APP_PASSWORD to .env to get an email when a purchase waits for you).');
-if (ap.seedDemoWallet()) console.log('Dry run with an empty wallet: added three demo cards (Citi Double Cash, Amex Gold, Blue Cash Preferred).');
-server.listen(PORT, '127.0.0.1', () => console.log('CardBuddy running at http://localhost:' + PORT + (process.env.CARDBUDDY_DRY_RUN === '1' ? ' (dry run: PayPal is never called)' : '')));
+const seeded = ap.seedDemoWallet();
+if (seeded === 'env') console.log('Empty wallet: loaded the cards in CARDBUDDY_WALLET.');
+else if (seeded) console.log('Dry run with an empty wallet: added three demo cards (Citi Double Cash, Amex Gold, Blue Cash Preferred).');
+// Hosted, it listens on every interface for the host's proxy; the Host check above still turns away any other name.
+server.listen(PORT, PUBLIC ? '0.0.0.0' : '127.0.0.1', () => console.log('CardBuddy running at ' + (PUBLIC || 'http://localhost:' + PORT) + (process.env.CARDBUDDY_DRY_RUN === '1' ? ' (dry run: PayPal is never called)' : '') + (KEY ? '; agents connect to ' + (PUBLIC || 'http://localhost:' + PORT) + '/mcp' : '')));
