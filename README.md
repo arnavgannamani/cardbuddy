@@ -155,6 +155,26 @@ To try it from your own computer first, start CardBuddy with those variables and
 | Paying while the person isn't there | **Orders API v2**: `payment_source.card.vault_id` with `stored_credential` (merchant-initiated, unscheduled, subsequent), then capture | `src/paypal.mjs` |
 | Auth | OAuth 2.0 client credentials (sandbox) | `src/paypal.mjs` |
 
+## AI used
+
+**An AI agent is the shopper.** Claude, or any agent that speaks the Model Context Protocol, shops through CardBuddy's
+eight MCP tools (`mcp/server.mjs`, or `/mcp` over Streamable HTTP when hosted). The agent can search the store, check
+out, pay and read the rules and receipts, but it has no tool to change the rules or approve its own purchases.
+
+**A trained model double-checks the agent.** When an agent buys from a store CardBuddy doesn't know, the agent says
+which category it is, and a wrong category could skip a rule (a hotel called "other" would dodge "travel always needs
+my OK"). So CardBuddy reads the store's name itself, and if its reading disagrees with the agent's, the spending rules
+check both. Example: an agent pays $89 at "Seaside Lodge" as "other"; the model reads it as travel, and the purchase
+waits with the reason "CardBuddy reads SEASIDE LODGE as travel, and travel purchases always need your approval".
+
+| | |
+|---|---|
+| Model | Character 3–5-gram TF-IDF (within words) with logistic regression, 11 categories, 20,000 features |
+| Training data | 964,618 government purchase-card transactions at 221,058 merchant names (Indiana and Delaware open data), labelled by merchant category code |
+| Trained with | Python, scikit-learn, pandas, numpy; the weights ship in `engine/category-model.json` and run in plain JavaScript, with no ML library at runtime |
+| How it's used | Keyword rules first; the model only counts when it is at least 90% sure (`engine/engine.cjs`, `categoryInfo`). CardBuddy uses its reading as a second opinion on the agent's category (`src/choose.mjs`, `src/policy.mjs`) |
+| Measured | On 407,011 Oklahoma purchases it never trained on, rules plus the model put 91.7% of purchases in the right category, against 84.3% for the rules alone |
+
 ## The numbers
 
 A reproducible simulated year (`node sim/simulate.mjs`, seed 20261112): 329 agent purchases, $21,227.56, the same three
