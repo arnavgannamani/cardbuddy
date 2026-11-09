@@ -108,6 +108,9 @@ your wallet and rules. It refuses while a payment's result is unknown.
 
 **Tests:** `npm test` runs the card choice, decline fallback, alert, end-to-end agent and hosted tests. None call PayPal.
 
+**No agent handy?** In dry-run mode (`npm run dry`) the wallet page has a **Run the demo agent** button: it plays the
+video's purchases (groceries, dinner, a TV and a hotel the agent mislabels) and starts a clean history each time.
+
 ## Host it, so agents in other apps can connect
 
 Agents that run in the cloud (Muse, ChatGPT and claude.ai connectors, anything that takes an MCP server URL) can't reach
@@ -115,13 +118,21 @@ your laptop. Hosted, CardBuddy serves the same eight tools at `https://<your hos
 the agent sends an API key. The pages sit behind a password, and the key opens only the agent's tools: it can't approve
 a purchase or change a rule. Still sandbox only.
 
+**Quickest: the Render Blueprint.** `render.yaml` sets up the hosted demo in dry-run mode (PayPal is never called),
+with Render generating the page password and the agent's API key; the address comes from Render's
+`RENDER_EXTERNAL_URL`. On Render: New → Blueprint → this repo. Find the password and key under the service's
+Environment tab. In dry-run mode the wallet page has a **Run the demo agent** button that plays the purchases from the
+video, so you can see CardBuddy work without connecting an agent.
+
+**Or by hand:**
+
 1. **Make a password and a key:** run `openssl rand -hex 16` twice.
 2. **Deploy** on any Node host. On [Render](https://render.com): New → Web Service → this repo, start command
    `node server.mjs`, then these environment variables:
 
    | Variable | Value |
    |---|---|
-   | `CARDBUDDY_PUBLIC_URL` | The service's address, e.g. `https://cardbuddy.onrender.com` |
+   | `CARDBUDDY_PUBLIC_URL` | The service's address, e.g. `https://cardbuddy.onrender.com` (on Render it's set for you) |
    | `CARDBUDDY_PASSWORD` | The first one from step 1: what you type to open the pages (any username) |
    | `CARDBUDDY_KEY` | The second one: the agent's API key |
    | `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET` | The sandbox app's keys, or `CARDBUDDY_DRY_RUN=1` for no PayPal at all |

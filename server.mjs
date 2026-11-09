@@ -13,15 +13,17 @@ import { holdable, CATEGORIES, E, Bad } from './src/choose.mjs';
 import { createSetupToken } from './src/paypal.mjs';
 import { alertsOn, alertsTo } from './src/notify.mjs';
 import * as mcp from './mcp/server.mjs';
+import { runDemo } from './src/demo.mjs';
 
 const WEB = path.join(path.dirname(fileURLToPath(import.meta.url)), 'web');
 const PORT = Number(process.env.PORT || 4242);
 if (process.argv.includes('--dry-run')) process.env.CARDBUDDY_DRY_RUN = '1'; // npm run dry
+if (!process.env.CARDBUDDY_PUBLIC_URL && process.env.RENDER_EXTERNAL_URL) process.env.CARDBUDDY_PUBLIC_URL = process.env.RENDER_EXTERNAL_URL; // hosted on Render
 const PAGES = { '/': 'index.html', '/approvals': 'approvals.html', '/receipts': 'receipts.html', '/simulation': 'simulation.html', '/store': 'store.html' };
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.json': 'application/json; charset=utf-8', '.woff2': 'font/woff2' }; // the charset keeps send() from re-encoding a file as JSON
 
 const ROUTES = {
-  'GET /api/config': () => ({ clientId: process.env.PAYPAL_CLIENT_ID || null, categories: CATEGORIES, labels: E.CAT_LABEL }),
+  'GET /api/config': () => ({ clientId: process.env.PAYPAL_CLIENT_ID || null, categories: CATEGORIES, labels: E.CAT_LABEL, dryRun: process.env.CARDBUDDY_DRY_RUN === '1' }),
   'GET /api/cards': () => holdable(),
   'GET /api/wallet': () => ap.wallet(),
   'POST /api/vault/setup-token': () => createSetupToken(),
@@ -40,7 +42,8 @@ const ROUTES = {
   // The demo store (src/shop.mjs): a fictional merchant the agent can search and check out at.
   'GET /api/shop': () => catalog(),
   'POST /api/shop/search': b => search(b),
-  'POST /api/shop/checkout': b => ap.checkout(b)
+  'POST /api/shop/checkout': b => ap.checkout(b),
+  'POST /api/demo/run': () => runDemo()
 };
 
 // What the agent's MCP server calls. Every other POST (approve, decline, rules, cards) is the person's, from these pages.

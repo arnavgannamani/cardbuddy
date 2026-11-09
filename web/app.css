@@ -27,7 +27,7 @@ a { color: inherit; }
 .brand { display: flex; align-items: center; gap: 9px; text-decoration: none; white-space: nowrap; }
 .brand img { width: 25px; height: 20px; display: block; }
 .brand b { font: 700 15.5px/1 'Sora', 'Inter Tight', sans-serif; letter-spacing: -0.02em; }
-.brand span { color: var(--muted); font-size: 13px; padding-left: 9px; border-left: 1px solid var(--control); }
+
 .top nav { display: flex; gap: 4px; flex: 1; }
 .top nav a { text-decoration: none; color: var(--muted); font-weight: 500; font-size: 14px; padding: 5px 9px; border: 1px solid transparent; border-radius: var(--r-control); display: flex; align-items: center; gap: 6px; white-space: nowrap; }
 .top nav a:hover { color: var(--text); background: rgba(12, 19, 34, .04); }
@@ -228,3 +228,17 @@ main, .foot { transition: opacity 140ms ease-out; }
 .shop .meta b { color: var(--text); font-weight: 600; }
 .store-note { margin-top: 24px; }
 @media (max-width: 900px) { .shops { grid-template-columns: 1fr; } }
+
+/* "Run the demo agent" (dry-run mode only): a strip under the page title. */
+.demo { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; margin: -16px 0 28px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
+.demo[hidden] { display: none; }
+.demo > p { margin: 0; font-size: 14px; color: var(--muted); flex: 1 1 280px; }
+.demo > p b { color: var(--text); }
+.demo-out { flex: 1 1 100%; }
+.demo-out:empty { display: none; }
+.demo-out ul { list-style: none; margin: 0; padding: 12px 0 0; border-top: 1px solid var(--rule); display: grid; gap: 10px; font-size: 13.5px; }
+.demo-out li { display: grid; grid-template-columns: minmax(180px, 260px) 1fr; gap: 4px 16px; }
+.demo-out .ask { color: var(--muted); }
+.demo-held { color: var(--warning); }
+.demo-links { margin: 12px 0 0; font-size: 13.5px; }
+@media (max-width: 640px) { .demo-out li { grid-template-columns: 1fr; } }

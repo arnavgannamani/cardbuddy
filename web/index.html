@@ -52,6 +52,11 @@
       <h1>Your agent's wallet</h1>
       <p class="sub">The cards your agent is allowed to pay with. On every purchase CardBuddy picks the one that earns the most, then pays through PayPal.</p>
     </div></div>
+    <div class="demo" id="demo" hidden>
+      <p><b>No agent connected?</b> Watch a demo agent shop: groceries, dinner, a TV and a hotel.</p>
+      <button id="runDemo">Run the demo agent</button>
+      <div class="demo-out" id="demoOut" aria-live="polite"></div>
+    </div>
 
     <div class="grid">
       <div class="stack">
@@ -99,5 +104,6 @@
     <span>Sandbox: no real money moves.</span>
   </footer>
   <script src="/connect.js"></script>
+  <script src="/demo.js"></script>
 </body>
 </html>
