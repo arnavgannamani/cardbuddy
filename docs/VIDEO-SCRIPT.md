@@ -12,7 +12,7 @@ approval."]*
 ## 2. You two (0:10–0:20)
 *[Face clip: both founders, one line each]*
 > **Arnav:** "I'm Arnav."
-> **Mihir:** "And I'm Mihir. We built PointMaxx, which helps people pick credit cards from their real spending."
+> **Mihir:** "And I'm Mihir. We build tools that help people earn more from the credit cards they already have."
 
 ## 3. The problem (0:20–0:36)
 *[Text on a plain background: two numbers appear one at a time]*
@@ -66,7 +66,7 @@ one.]*
 > dollars more than the default card, more than double, and caught every one of the agent's mistakes."
 
 ## 11. Close (2:46–2:55)
-*[Face clip, then end card: "CardBuddy by PointMaxx", repo link, "Built on PayPal (sandbox)"]*
+*[Face clip, then end card: "CardBuddy", repo link, "Built on PayPal (sandbox)"]*
 > "CardBuddy. Your agent shops. CardBuddy picks the card and keeps your rules."
 
 ## Editing notes

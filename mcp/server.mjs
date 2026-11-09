@@ -2,7 +2,7 @@
 // CardBuddy as an MCP server: the tools an AI agent uses to pay. It is a thin client of the CardBuddy server
 // (server.mjs, CARDBUDDY_URL, default http://localhost:4242): the PayPal keys, the vault tokens and the spending rules
 // stay there, so the agent can see the rules but has no tool to change them, and nothing it sends can skip them.
-// ponytail: the MCP wire format is written out by hand (JSON-RPC lines on stdin/stdout), as in pointmaxx-mcp.
+// ponytail: the MCP wire format is written out by hand (JSON-RPC lines on stdin/stdout), with no SDK.
 // The hosted CardBuddy also serves these tools at /mcp (server.mjs): it imports handle() and calls its own routes.
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -21,7 +21,7 @@ async function httpApi(path, body) {
   try {
     res = await fetch(BASE + path, body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {});
   } catch {
-    throw new Bad(`CardBuddy isn't running at ${BASE}. Start it with npm start in the pointmaxx-agentpay folder.`);
+    throw new Bad(`CardBuddy isn't running at ${BASE}. Start it with npm start in the CardBuddy folder.`);
   }
   const j = await res.json().catch(() => ({}));
   if (!res.ok) throw new Bad(j.error || `CardBuddy answered HTTP ${res.status}.`);

@@ -80,12 +80,12 @@
       return hostsFor(h, stores[h]).some(function (x) { return x.indexOf('*.') === 0 ? hostname.endsWith(x.slice(1)) : hostname === x; });
     })[0] || null;
   }
-  root.PointMaxxPick = pick;
-  root.PointMaxxDescribe = describe;
-  root.PointMaxxLook = look;
-  root.PointMaxxCaps = capList;
-  root.PointMaxxQuarter = quarterKey;
-  root.PointMaxxSamePeriod = samePeriod;
-  root.PointMaxxPatterns = patterns;
-  root.PointMaxxStore = storeFor;
+  root.CardBuddyPick = pick;
+  root.CardBuddyDescribe = describe;
+  root.CardBuddyLook = look;
+  root.CardBuddyCaps = capList;
+  root.CardBuddyQuarter = quarterKey;
+  root.CardBuddySamePeriod = samePeriod;
+  root.CardBuddyPatterns = patterns;
+  root.CardBuddyStore = storeFor;
 })(typeof window !== 'undefined' ? window : globalThis);

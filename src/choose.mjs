@@ -1,4 +1,4 @@
-// Which card in the person's wallet earns the most on one purchase, and on which rail. Uses the PointMaxx engine's card
+// Which card in the person's wallet earns the most on one purchase, and on which rail. Uses the rewards engine's card
 // terms (engine/engine.cjs, engine/cards.json) and the extension's one-purchase scorer (engine/pick.cjs).
 //
 // A rail is how the money moves:
@@ -32,7 +32,7 @@ export function storeFor({ merchant, site, category } = {}) {
   if (site != null) {
     if (typeof site !== 'string' || site.length > 200) throw new Bad('site must be a website of up to 200 characters.');
     host = site.trim().toLowerCase().replace(/^https?:\/\//, '').split(/[/?#]/)[0];
-    const key = globalThis.PointMaxxStore(STORES, host);
+    const key = globalThis.CardBuddyStore(STORES, host);
     if (key) return { name: STORES[key][0], cat: STORES[key][1], site: key, warn: STORES[key][2] || null, guess: null };
     if (merchant == null) merchant = host; // a site CardBuddy doesn't know: its address stands in for the store's name
   }
@@ -51,7 +51,7 @@ export function choose(wallet, purchase, date = new Date()) {
   const store = storeFor(purchase), owned = [...new Set(wallet.map(w => w.cardId))];
   const options = [];
   for (const [rail, label] of Object.entries(RAILS)) {
-    for (const r of globalThis.PointMaxxPick(owned, {}, { name: label(store.name), cat: store.cat }, date)) {
+    for (const r of globalThis.CardBuddyPick(owned, {}, { name: label(store.name), cat: store.cat }, date)) {
       options.push({ rail, cardId: r.card.id, card: r.card.name, percentBack: Math.round(r.back * 100) / 100, why: r.why, cap: r.cap, cash: r.card.unit === 'cash' });
     }
   }

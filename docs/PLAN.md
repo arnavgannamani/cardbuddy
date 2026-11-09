@@ -13,12 +13,12 @@ that PayPal's developer platform and an AI tool are both central.
 - **It targets the "Best Use of Agentic Commerce" prize head-on,** and fills two real gaps in agent payments: agents
   pay with the default card, and payment tools have no built-in confirmation step.
 - **A clear, measurable story for the video:** "your agent earned $X more", with real card math from an engine that
-  already ships (pointmaxx.app, a Chrome extension, an MCP server on npm and the official MCP Registry).
+  already ships in our card recommender.
 
 ## Architecture
 
 ```
-Claude / any MCP agent ──► cardbuddy-mcp ──► policy check ──► card choice (PointMaxx engine)
+Claude / any MCP agent ──► cardbuddy-mcp ──► policy check ──► card choice (rewards engine)
                                                     │                   │
                                        needs approval?            vault token
                                                     ▼                   ▼
@@ -27,20 +27,20 @@ Claude / any MCP agent ──► cardbuddy-mcp ──► policy check ──► 
                                                                    receipt log
 ```
 
-- `engine/`: the PointMaxx rewards engine and card data, as a dependency (reuse `pointmaxx-mcp`'s `lib/`).
+- `engine/`: our rewards engine and card data, as a dependency.
 - `server/`: a small Node server that holds the PayPal credentials (sandbox client ID and secret, from env), creates
   and captures orders, vaults cards, and keeps the receipt log. Card numbers never reach it: PayPal's card fields
   tokenize them in the browser.
 - `mcp/`: the agent-facing MCP server, calling `server/`.
 - `web/`: two pages: "Connect your wallet" (PayPal card fields + which card each one is), and "Receipts".
-- `extension/` (stretch): PayPal/Venmo checkout detection in the existing PointMaxx extension.
+- `extension/` (stretch): PayPal/Venmo checkout detection in our existing browser extension.
 - A demo store with a few sandbox merchants (restaurant, grocery, electronics) so the purchases have real categories.
 
 ## Done (as of Tue Nov 3)
 
 - Wallet: cards vaulted with PayPal Card Fields (Vault v3); make default, remove.
 - Unattended payments: Orders v2 with the vault ID and stored-credential flags; works in the sandbox.
-- Card choice per purchase from the PointMaxx engine, with automatic fallback to the next-best card on a decline.
+- Card choice per purchase from the rewards engine, with automatic fallback to the next-best card on a decline.
 - Spending rules (per purchase, monthly budget, always-ask categories); held purchases; approve or decline.
 - Receipts against the default card; the simulation page (a year of purchases: +$450.99, +106%).
 - The agent's MCP server (`mcp/server.mjs`, connected by `.mcp.json`): get_wallet, recommend_card, pay,
@@ -50,7 +50,7 @@ Claude / any MCP agent ──► cardbuddy-mcp ──► policy check ──► 
   past the limit, or a store with a purchase already waiting, all wait for approval. An unknown merchant is also
   checked against the engine's own reading of its name. Payments interrupted by a restart are kept as "unknown".
 - Hold alerts by email (`src/notify.mjs`): Gmail with an App Password, sent in the background, off without settings.
-- Web app restyled (taste-skill, achromatic ledger in PointMaxx colours), smooth page changes.
+- Web app restyled (taste-skill, achromatic ledger in our brand colours), smooth page changes.
 
 Answered: unattended charges work in the sandbox (question 1); the person names each card when vaulting it (question 3).
 
@@ -65,7 +65,7 @@ Answered: unattended charges work in the sandbox (question 1); the person names 
 | Nov 5–6 | ~~Hardening~~ first pass done (Mihir, Nov 3: one payment at a time, no double charges, interrupted payments kept, safe data writes). Second pass after the fresh-machine test. |
 | Nov 6–7 | **Hosted demo** so anyone can try it without installing. Seed a demo wallet. |
 | ~~Nov 7–8~~ | ~~README a judge can follow~~ (done Nov 4: a 2-minute dry-run path, any MCP client, PayPal APIs used, built-during-the-hackathon section). Mihir's fresh-machine test checks it. Git history scanned for secrets: clean. |
-| Nov 8 | **Make the repo public** (history already scanned: clean; decide whether the PointMaxx engine data ships under MIT); MIT license visible in the About section. Check PayPal Cashback and Venmo card terms before claiming them. Stretch: PayPal/Venmo checkout as a rail. |
+| Nov 8 | **Make the repo public** (history already scanned: clean; decide whether the engine data ships under MIT); MIT license visible in the About section. Check PayPal Cashback and Venmo card terms before claiming them. Stretch: PayPal/Venmo checkout as a rail. |
 | Nov 9–10 | **Video under 3 minutes**, public on YouTube: problem → agent buys groceries, right card pays → TV held, phone buzzes → approve/decline → receipts → simulation. No logos, card art or music. |
 | Nov 10 | **Devpost write-up**: problem, how it works, PayPal APIs used, the numbers, tokens saved, and a "built during the hackathon" paragraph. |
 | Wed Nov 11 | Final check from a clean clone, then submit. Deadline Thu Nov 12, 12:00 pm PT. |
@@ -75,9 +75,8 @@ Answered: unattended charges work in the sandbox (question 1); the person names 
 ## What the official rules require (read Nov 3)
 
 - **Existing work is allowed** if the project was new or significantly updated after Oct 1. CardBuddy is a new repo built
-  in the window; the PointMaxx engine and card data existed before. Say so in the write-up.
-- **Solely owned by the entrant.** Enter as a Team (Arnav and Mihir). If PointMaxx moves into the LLC before submitting,
-  enter as the LLC instead, or move it after Nov 12.
+  in the window; the rewards engine and card data come from our separate card recommender (started Oct 23). Say so in the write-up.
+- **Solely owned by the entrant.** Enter as a Team (Arnav and Mihir).
 - **Judges must be able to run it**: public repo with an open-source license, plus a hosted demo or complete setup steps
   with any sandbox credentials needed.
 - **Video under 3 minutes on YouTube**; no third-party trademarks or copyrighted music without permission. Avoid issuer

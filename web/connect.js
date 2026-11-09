@@ -9,7 +9,7 @@
   }
   function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 
-  var FACES = ['#0a2366', '#1a5fdb', '#0c1322', '#3b5a99', '#5d6879']; // PointMaxx navy, blue and ink: drawn cards, never issuer art
+  var FACES = ['#0a2366', '#1a5fdb', '#0c1322', '#3b5a99', '#5d6879']; // navy, blue and ink: drawn cards, never issuer art
   function brand(b) { b = String(b || 'Card').toLowerCase(); return b.charAt(0).toUpperCase() + b.slice(1); }
 
   // For each category, the card CardBuddy would pay a $100 purchase with, from the same engine the agent uses.

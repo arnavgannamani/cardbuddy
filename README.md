@@ -23,7 +23,7 @@ no confirmation step: a duplicate order, the wrong item, a flight on the wrong d
 1. **Your wallet, in PayPal.** You save your cards to PayPal's vault once, through PayPal's own card fields: CardBuddy
    never sees a card number. It stores only PayPal's vault tokens and which card each one is (say "Amex Gold").
 2. **The right card, every time.** Before any payment, CardBuddy works out the purchase's category (from the store's
-   website, or from its name for a store it doesn't know) and runs every card in your wallet through the PointMaxx
+   website, or from its name for a store it doesn't know) and runs every card in your wallet through its
    rewards engine: rates, caps, rotating categories and point values for 50+ US cards. It pays with the card that earns
    the most.
 3. **Rules the agent can't skip.** You set a per-purchase limit, a monthly budget, and categories that always need your
@@ -36,7 +36,7 @@ no confirmation step: a duplicate order, the wrong item, a flight on the wrong d
    and the PayPal order id.
 
 ```
- AI agent ── MCP tools ──► CardBuddy server ──► best card (PointMaxx engine)
+ AI agent ── MCP tools ──► CardBuddy server ──► best card (rewards engine)
  (any MCP client)          │                  ──► your spending rules ──► held? ──► Approvals page + email
                            │                                                         (you approve or decline)
                            └──► PayPal Orders API, paid with the chosen card's vault token ──► receipt
@@ -49,8 +49,8 @@ No PayPal account needed: dry-run mode does everything except the PayPal calls, 
 (Citi Double Cash as the default, Amex Gold, Amex Blue Cash Preferred).
 
 ```bash
-git clone https://github.com/arnavgannamani/pointmaxx-agentpay.git
-cd pointmaxx-agentpay
+git clone https://github.com/arnavgannamani/pointmaxx-cardbuddy.git
+cd pointmaxx-cardbuddy
 npm run dry
 ```
 
@@ -71,7 +71,7 @@ pays that total on the best card, or holds it. If you give a limit ("keep it und
 you. With real merchants, the total comes from the merchant's own PayPal checkout instead.
 
 - **Claude Code:** open a session in the repo folder. `.mcp.json` connects the `cardbuddy` tools; allow them when asked.
-- **Any other MCP client:** add a server that runs `node /path/to/pointmaxx-agentpay/mcp/server.mjs` with the
+- **Any other MCP client:** add a server that runs `node /path/to/pointmaxx-cardbuddy/mcp/server.mjs` with the
   environment variable `CARDBUDDY_URL=http://localhost:4242`.
 
 Then ask it, for example: *"Order my weekly groceries, get pad thai for dinner tonight, and buy that 65-inch TV."* It
@@ -180,9 +180,9 @@ The submission period opened Oct 1, 2026; this repository was started on Nov 3, 
 for the hackathon: the PayPal wallet, payments and decline fallback, the spending rules and approvals, email alerts, the
 agent's MCP server, the web app, the simulation and the tests.
 
-**What came from elsewhere:** the PointMaxx rewards engine and card data (`engine/`), from pointmaxx.app, our card
-recommender. We started PointMaxx on Oct 23, 2026, during the submission period but as a separate product. CardBuddy
-uses them as a library to score cards.
+**What came from elsewhere:** the rewards engine and card data (`engine/`) come from a card recommender we started on
+Oct 23, 2026, during the submission period but as a separate product. CardBuddy uses them as a library to score
+cards.
 
 ## What's next
 
@@ -192,10 +192,9 @@ uses them as a library to score cards.
   enforces their rules, so they approve only what's unusual instead of every purchase. The demo store stands in for
   those merchants today.
 - Sign-in for each person (OAuth), so the hosted connector serves many wallets instead of one demo wallet.
-- Paying through PayPal and Venmo balances where their cards earn more, and the PointMaxx Chrome extension at PayPal
-  checkout.
+- Paying through PayPal and Venmo balances where their cards earn more.
 
 ## License
 
-MIT, see [LICENSE](LICENSE). The rewards engine and card data come from PointMaxx (pointmaxx.app); card data includes
+MIT, see [LICENSE](LICENSE). The rewards engine and card data come from our card recommender; card data includes
 CardPin (MIT, see `engine/CARDPIN-LICENSE.txt`).
