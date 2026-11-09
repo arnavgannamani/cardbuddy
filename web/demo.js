@@ -1,12 +1,12 @@
-// "Run the demo agent" on the wallet page: shown only in dry-run mode (the hosted demo). It plays the purchases from
-// the video through CardBuddy and lists what happened, with links to the pages that show the rest.
+// "Run the demo agent" on the wallet page. It plays the purchases from the video through CardBuddy and lists what
+// happened, with links to the pages that show the rest. On the sandbox, the paid ones are real PayPal sandbox orders.
 (function () {
   var $ = function (id) { return document.getElementById(id); };
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function money(x) { return '$' + Number(x).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
   fetch('/api/config').then(function (r) { return r.json(); }).then(function (c) {
-    if (!c.dryRun) return;
     $('demo').hidden = false;
+    if (!c.dryRun) $('demoNote').textContent = ' The paid ones are real PayPal sandbox orders.';
     $('runDemo').addEventListener('click', function () {
       var b = $('runDemo');
       b.disabled = true; b.textContent = 'Shopping…';
@@ -16,7 +16,7 @@
           $('demoOut').innerHTML = '<ul>' + d.steps.map(function (s) {
             return '<li><span class="ask">"' + esc(s.ask) + '"</span>' + (s.held
               ? '<span class="demo-held">Held for your approval: ' + esc(s.reasons[0]) + '</span>'
-              : '<span>Paid ' + money(s.amount) + ' on <b>' + esc(s.card) + '</b>, earning ' + money(s.earned) + ' (default card: ' + money(s.defaultEarned) + ')</span>') + '</li>';
+              : '<span>Paid ' + money(s.amount) + ' on <b>' + esc(s.card) + '</b>, earning ' + money(s.earned) + ' (default card: ' + money(s.defaultEarned) + ')' + (s.paypalOrderId ? ' · PayPal order ' + esc(s.paypalOrderId) : '') + '</span>') + '</li>';
           }).join('') + '</ul><p class="demo-links"><a href="/approvals">Approve or decline the held ones</a> · <a href="/receipts">See the receipts</a></p>';
           b.textContent = 'Run it again'; b.disabled = false;
           if (window.cardbuddyRefreshCount) window.cardbuddyRefreshCount();

@@ -80,6 +80,14 @@ try {
   assert.equal((await req('POST', '/api/approve', { body: { id: tv.pendingId }, headers: person })).status, 200);
   assert.equal((await call('purchase_status', { pendingId: tv.pendingId })).status, 'approved_and_paid');
   console.log('  the key can\'t approve; the person (password) approved it and it paid');
+
+  // The demo agent: a clean history each run, the old one kept in an archive file.
+  const demo = (await req('POST', '/api/demo/run', { body: {}, headers: person })).json;
+  assert.deepEqual(demo.steps.map(s => s.held), [false, false, true, true]);
+  assert.equal(demo.steps[0].card, 'Amex Blue Cash Preferred'); assert.equal(demo.steps[0].paypalOrderId, null); // dry run: no PayPal order
+  assert.ok(fs.readdirSync(DATA).some(f => /^archive-.+\.json$/.test(f)));
+  assert.equal((await req('GET', '/api/receipts', { headers: person })).json.receipts.length, 2);
+  console.log('  demo agent: groceries and dinner paid, TV and hotel held; the old history archived');
   console.log('hosted: all passed');
 } finally {
   server.kill();

@@ -108,8 +108,10 @@ your wallet and rules. It refuses while a payment's result is unknown.
 
 **Tests:** `npm test` runs the card choice, decline fallback, alert, end-to-end agent and hosted tests. None call PayPal.
 
-**No agent handy?** In dry-run mode (`npm run dry`) the wallet page has a **Run the demo agent** button: it plays the
-video's purchases (groceries, dinner, a TV and a hotel the agent mislabels) and starts a clean history each time.
+**No agent handy?** The wallet page has a **Run the demo agent** button: it plays the video's purchases (groceries,
+dinner, a TV and a hotel the agent mislabels) and starts a clean history each time, keeping the old one in
+`data/archive-<time>.json`. With sandbox keys the two paid purchases are real PayPal sandbox orders; in dry run
+(`npm run dry`) PayPal is never called.
 
 ## Host it, so agents in other apps can connect
 
@@ -121,8 +123,9 @@ a purchase or change a rule. Still sandbox only.
 **Quickest: the Render Blueprint.** `render.yaml` sets up the hosted demo in dry-run mode (PayPal is never called),
 with Render generating the page password and the agent's API key; the address comes from Render's
 `RENDER_EXTERNAL_URL`. On Render: New → Blueprint → this repo. Find the password and key under the service's
-Environment tab. In dry-run mode the wallet page has a **Run the demo agent** button that plays the purchases from the
-video, so you can see CardBuddy work without connecting an agent.
+Environment tab. The wallet page's **Run the demo agent** button plays the purchases from the video, so you can see
+CardBuddy work without connecting an agent. Add the sandbox app's `PAYPAL_CLIENT_ID` and `PAYPAL_CLIENT_SECRET` and
+remove `CARDBUDDY_DRY_RUN` to make them real PayPal sandbox orders.
 
 **Or by hand:**
 
