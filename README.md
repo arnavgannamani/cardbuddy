@@ -180,8 +180,9 @@ The submission period opened Oct 1, 2026; this repository was started on Nov 3, 
 for the hackathon: the PayPal wallet, payments and decline fallback, the spending rules and approvals, email alerts, the
 agent's MCP server, the web app, the simulation and the tests.
 
-**What existed before:** the PointMaxx rewards engine and card data (`engine/`), from pointmaxx.app, our card
-recommender. CardBuddy uses them as a library to score cards.
+**What came from elsewhere:** the PointMaxx rewards engine and card data (`engine/`), from pointmaxx.app, our card
+recommender. We started PointMaxx on Oct 23, 2026, during the submission period but as a separate product. CardBuddy
+uses them as a library to score cards.
 
 ## What's next
 
