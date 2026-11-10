@@ -158,6 +158,34 @@ To try it from your own computer first, start CardBuddy with those variables and
 | Paying while the person isn't there | **Orders API v2**: `payment_source.card.vault_id` with `stored_credential` (merchant-initiated, unscheduled, subsequent), then capture | `src/paypal.mjs` |
 | Auth | OAuth 2.0 client credentials (sandbox) | `src/paypal.mjs` |
 
+## How CardBuddy picks the card
+
+For every purchase, CardBuddy scores each card in the wallet and pays with the one that earns the most
+(`src/choose.mjs`, using the rewards engine in `engine/`).
+
+1. **Find the category.** A store CardBuddy knows (`engine/stores.json`) has a fixed category. For any other store the
+   agent says the category, and CardBuddy also reads the store's name itself (keyword rules, then the trained model
+   under [AI used](#ai-used)) as a check for the spending rules.
+2. **Find each card's rate there** (`engine/pick.cjs`, `rateFor`). It starts from the card's base rate and takes the
+   highest that applies:
+   - the card's bonus rate for that category (say 6% on groceries);
+   - a choose-your-category or top-category bonus (cards like Citi Custom Cash);
+   - a rotating quarterly bonus, using this quarter's categories (cards like Chase Freedom Flex);
+   - a bonus at named brands, matched on the store's name (say 3x on flights booked directly with an airline).
+3. **Turn points into dollars.** Each card's rate is multiplied by what its points are worth (cents per point; 1 for
+   cash back), so a 4x points card and a 6% cash card compare fairly.
+4. **Pick the winner.** The highest percent back wins. A tie goes to cash back over points, since cash is certain. The
+   receipt compares it with what the default card would have earned.
+5. **Check the PayPal rails too.** CardBuddy also scores paying through the PayPal wallet or Venmo, where some cards earn
+   a checkout bonus (the PayPal Cashback Mastercard's 3% at PayPal checkout), and says so when a rail would earn more.
+6. **Pay, or fall back.** CardBuddy charges the winner's vault token through the Orders API. If PayPal declines it, the
+   next-best card pays, and the receipt says which card was declined.
+
+**The card data** (`engine/cards.json`): 56 US cards fully researched and scored, each with its earn rates, caps,
+rotating categories, point value, annual fee and a link to the issuer's terms with the date it was checked. Spending
+caps come back with each pick (`recommend_card`); CardBuddy doesn't yet count spending against them, so a card stays at its bonus rate after
+its cap would have run out.
+
 ## AI used
 
 **An AI agent is the shopper.** Claude, or any agent that speaks the Model Context Protocol, shops through CardBuddy's
