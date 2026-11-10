@@ -50,13 +50,15 @@ const ROUTES = {
 const AGENT_ROUTES = new Set(['POST /api/recommend', 'POST /api/pay', 'POST /api/purchase-status', 'POST /api/shop/search', 'POST /api/shop/checkout']);
 const HOSTS = ['localhost:' + PORT, '127.0.0.1:' + PORT], ORIGINS = HOSTS.map(h => 'http://' + h);
 
-// Hosted: the public address joins the allowed hosts. The pages and the person's API need CARDBUDDY_PASSWORD (the
-// sign-in page sets a cookie; curl can send it as Basic auth); agents get only the MCP tools at /mcp, with
-// CARDBUDDY_KEY, so the key can't approve.
+// Hosted: the public address joins the allowed hosts. With CARDBUDDY_PASSWORD the pages and the person's API need it
+// (the sign-in page sets a cookie; curl can send it as Basic auth); without one the pages are an open demo for judges,
+// and nobody can remove its cards (that deletes them from PayPal's vault for good). Agents get only the MCP tools at
+// /mcp, with CARDBUDDY_KEY.
 // ponytail: one shared wallet and one password for the whole demo; accounts per person if it ever serves real users.
 const PUBLIC = (process.env.CARDBUDDY_PUBLIC_URL || '').replace(/\/+$/, ''), PASSWORD = process.env.CARDBUDDY_PASSWORD || '', KEY = process.env.CARDBUDDY_KEY || '';
 if (PUBLIC) {
-  if (PASSWORD.length < 12 || KEY.length < 24) { console.error('Hosted CardBuddy (CARDBUDDY_PUBLIC_URL) needs CARDBUDDY_PASSWORD (12+ characters) and CARDBUDDY_KEY (24+), e.g. from: openssl rand -hex 16'); process.exit(1); }
+  if ((PASSWORD && PASSWORD.length < 12) || KEY.length < 24) { console.error('Hosted CardBuddy (CARDBUDDY_PUBLIC_URL) needs CARDBUDDY_KEY (24+ characters) and, unless the pages are an open demo, CARDBUDDY_PASSWORD (12+), e.g. from: openssl rand -hex 16'); process.exit(1); }
+  if (!PASSWORD) console.log('Open demo: no CARDBUDDY_PASSWORD, so anyone with the address can use the pages (cards can\'t be removed).');
   HOSTS.push(new URL(PUBLIC).host); ORIGINS.push(new URL(PUBLIC).origin);
 }
 // Compared as hashes, so the time taken says nothing about how much of a guess was right.
@@ -111,6 +113,9 @@ const server = http.createServer(async (req, res) => {
     const out = await mcp.handle(msg).catch(e => { console.error(e); return { jsonrpc: '2.0', id: msg.id ?? null, error: { code: -32603, message: 'CardBuddy hit an internal error.' } }; });
     return out ? send(200, out) : send(202, '', 'text/plain');
   }
+  const openDemo = PUBLIC && !PASSWORD;
+  if (openDemo && url.pathname === '/login') { res.writeHead(303, { Location: safeNext(url.searchParams.get('next')) }); return res.end(); }
+  if (openDemo && key === 'POST /api/wallet/remove') return send(403, { error: 'The public demo keeps its cards, so the next person can use them too.' });
   if (PUBLIC && url.pathname === '/login') {
     if (req.method === 'POST') {
       let s = ''; for await (const d of req) { s += d; if (s.length > 2000) return send(400, 'Too large.', 'text/plain'); }
@@ -123,7 +128,7 @@ const server = http.createServer(async (req, res) => {
       .replace('__WRONG__', url.searchParams.has('wrong') ? '<p class="wrong">That password isn\'t right.</p>' : '');
     return send(200, html, TYPES['.html']);
   }
-  if (PUBLIC && !OPEN.test(url.pathname) && !signedIn(req)) {
+  if (PUBLIC && !openDemo && !OPEN.test(url.pathname) && !signedIn(req)) {
     if (req.method === 'GET' && !url.pathname.startsWith('/api/')) { res.writeHead(303, { Location: '/login?next=' + encodeURIComponent(safeNext(url.pathname)) }); return res.end(); }
     return send(401, { error: 'Sign in at /login first.' });
   }

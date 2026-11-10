@@ -88,8 +88,27 @@ try {
   assert.ok(fs.readdirSync(DATA).some(f => /^archive-.+\.json$/.test(f)));
   assert.equal((await req('GET', '/api/receipts', { headers: person })).json.receipts.length, 2);
   console.log('  demo agent: groceries and dinner paid, TV and hotel held; the old history archived');
-  console.log('hosted: all passed');
 } finally {
   server.kill();
   fs.rmSync(DATA, { recursive: true, force: true });
 }
+
+// An open demo for judges: no password, so the pages open for anyone, but its cards can't be removed and /mcp still
+// needs the key.
+if (server.exitCode === null) await new Promise(ok => server.on('exit', ok));
+const OPEN_DATA = fs.mkdtempSync(path.join(os.tmpdir(), 'cardbuddy-test-'));
+const open = spawn(process.execPath, [path.join(ROOT, 'server.mjs')], { env: { ...env, CARDBUDDY_DATA: OPEN_DATA, CARDBUDDY_PASSWORD: '' }, stdio: ['ignore', 'pipe', 'inherit'] });
+await new Promise((ok, no) => { open.stdout.on('data', d => String(d).includes('running') && ok()); open.on('exit', no); });
+try {
+  assert.equal((await req('GET', '/approvals')).status, 200);
+  assert.equal((await req('GET', '/login?next=/receipts')).headers.location, '/receipts');
+  const remove = await req('POST', '/api/wallet/remove', { body: { vaultId: 'test-dc' }, headers: { Origin: PUBLIC } });
+  assert.equal(remove.status, 403); assert.equal((await req('GET', '/api/wallet')).json.length, 2);
+  assert.equal((await req('POST', '/mcp', { body: { jsonrpc: '2.0', id: 0, method: 'ping' } })).status, 401);
+  assert.equal((await req('GET', '/', { host: 'evil.example' })).status, 403);
+  console.log('  open demo: pages open with no password, cards can\'t be removed, /mcp still needs the key');
+} finally {
+  open.kill();
+  fs.rmSync(OPEN_DATA, { recursive: true, force: true });
+}
+console.log('hosted: all passed');
