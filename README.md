@@ -49,8 +49,8 @@ No PayPal account needed: dry-run mode does everything except the PayPal calls, 
 (Citi Double Cash as the default, Amex Gold, Amex Blue Cash Preferred).
 
 ```bash
-git clone https://github.com/arnavgannamani/pointmaxx-cardbuddy.git
-cd pointmaxx-cardbuddy
+git clone https://github.com/arnavgannamani/cardbuddy.git
+cd cardbuddy
 npm run dry
 ```
 
@@ -71,7 +71,7 @@ pays that total on the best card, or holds it. If you give a limit ("keep it und
 you. With real merchants, the total comes from the merchant's own PayPal checkout instead.
 
 - **Claude Code:** open a session in the repo folder. `.mcp.json` connects the `cardbuddy` tools; allow them when asked.
-- **Any other MCP client:** add a server that runs `node /path/to/pointmaxx-cardbuddy/mcp/server.mjs` with the
+- **Any other MCP client:** add a server that runs `node /path/to/cardbuddy/mcp/server.mjs` with the
   environment variable `CARDBUDDY_URL=http://localhost:4242`.
 
 Then ask it, for example: *"Order my weekly groceries, get pad thai for dinner tonight, and buy that 65-inch TV."* It
