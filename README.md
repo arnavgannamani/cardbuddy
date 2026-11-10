@@ -7,6 +7,7 @@ purchase leaves a receipt that shows what the right card earned versus your defa
 
 Built for the PayPal AI Hackathon (Nov 2026) by Arnav Gannamani and Mihir Argulkar.
 
+- **Live demo, nothing to install:** https://pointmaxx-cardbuddy.onrender.com ([how to use it](#live-demo))
 - **Try it in 2 minutes, no PayPal account:** [below](#try-it-in-2-minutes)
 - **Run it with real PayPal sandbox payments:** [full setup](#run-it-with-paypal-sandbox-payments)
 - **The numbers:** [a simulated year of agent purchases](#the-numbers)
@@ -42,6 +43,34 @@ no confirmation step: a duplicate order, the wrong item, a flight on the wrong d
                            └──► PayPal Orders API, paid with the chosen card's vault token ──► receipt
  You ── Wallet page ── PayPal card fields ──► PayPal Vault (CardBuddy keeps only the token)
 ```
+
+## Live demo
+
+**https://pointmaxx-cardbuddy.onrender.com**: open it in any browser, no sign-in needed.
+
+> **This is one shared demo, not your own account.** Everyone who opens the link sees the same wallet, the same
+> spending rules, the same held purchases and the same receipts. If someone else used it before you, you may see their
+> purchases, or rules they changed. Per-person accounts (each person signing in with their own PayPal wallet) are on
+> the [What's next](#whats-next) list.
+
+**Start here so you see what we see:**
+
+1. On the **Wallet** page, click **Run the demo agent**. It clears the last visitor's purchases (they're archived, not
+   deleted), puts the spending rules back to the defaults ($100 per purchase, $500 a month, travel always needs
+   approval), and plays the purchases from our video: groceries and dinner are paid on the card that earns the most,
+   and a $1,348.92 TV and a hotel the agent labelled "other" are held.
+2. Open **Approvals** to approve or decline the held purchases. Each says why it was held.
+3. Open **Receipts** to see the card each purchase used, what it earned against the default card, and its PayPal order
+   id.
+
+Click **Run the demo agent** again any time to start over. It's on Render's free tier, so the first visit after a quiet
+spell can take about a minute to wake up, and a restart clears the history (one click on the button brings it back).
+The demo's cards can't be removed, since that would delete them from PayPal's sandbox vault for everyone.
+
+**To connect your own AI agent** to the live demo: point any MCP client at
+`https://pointmaxx-cardbuddy.onrender.com/mcp` with the header `Authorization: Bearer <key>`, using the key in our
+Devpost testing instructions. It shops in the same shared wallet. For a wallet that's only yours, run CardBuddy on your
+own computer (next section): it takes two minutes and needs no PayPal account.
 
 ## Try it in 2 minutes
 
@@ -110,7 +139,7 @@ your wallet and rules. It refuses while a payment's result is unknown.
 
 **No agent handy?** The wallet page has a **Run the demo agent** button: it plays the video's purchases (groceries,
 dinner, a TV and a hotel the agent mislabels) and starts a clean history each time, keeping the old one in
-`data/archive-<time>.json`. With sandbox keys the two paid purchases are real PayPal sandbox orders; in dry run
+`data/archive-<time>.json`, with the spending rules back at their defaults. With sandbox keys the two paid purchases are real PayPal sandbox orders; in dry run
 (`npm run dry`) PayPal is never called.
 
 ## Host it, so agents in other apps can connect
